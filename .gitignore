@@ -1,0 +1,17 @@
+node_modules
+.next
+.expo
+.expo-shared
+dist
+coverage
+.turbo
+.DS_Store
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+cdk.out
+.open-next
+apps/mobile/.expo
+apps/mobile/android
+apps/mobile/ios

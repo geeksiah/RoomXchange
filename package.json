@@ -1,0 +1,27 @@
+{
+  "name": "roomxchange",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "backend",
+    "infra/cdk"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev:web": "npm run dev --workspace @roomxchange/web",
+    "dev:mobile": "npm run dev --workspace @roomxchange/mobile",
+    "dev:backend": "npm run dev --workspace @roomxchange/backend",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "cdk:synth": "npm run synth --workspace @roomxchange/cdk",
+    "cdk:deploy": "npm run deploy --workspace @roomxchange/cdk"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

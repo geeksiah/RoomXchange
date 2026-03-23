@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@roomxchange/contracts": [
+        "packages/contracts/src/index.ts"
+      ],
+      "@roomxchange/shared": [
+        "packages/shared/src/index.ts"
+      ]
+    }
+  }
+}

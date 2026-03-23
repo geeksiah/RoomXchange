@@ -1,0 +1,25 @@
+{
+  "name": "@roomxchange/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/handlers/api.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/handlers/api.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.703.0",
+    "@aws-sdk/client-dynamodb": "^3.703.0",
+    "@aws-sdk/client-s3": "^3.703.0",
+    "@aws-sdk/client-sns": "^3.703.0",
+    "@aws-sdk/lib-dynamodb": "^3.703.0",
+    "@aws-sdk/s3-request-presigner": "^3.703.0",
+    "@roomxchange/contracts": "0.1.0",
+    "@roomxchange/shared": "0.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145"
+  }
+}
