@@ -26,7 +26,9 @@ export class RoomXchangeStack extends Stack {
 
     const repoRoot = path.resolve(__dirname, "../../../..");
     const stage = process.env.ROOMXCHANGE_STAGE ?? "dev";
-    const domain = process.env.ROOMXCHANGE_DOMAIN ?? "roomxchange.com";
+    const domain = process.env.ROOMXCHANGE_DOMAIN?.trim();
+    const configuredWebUrl = process.env.ROOMXCHANGE_WEB_URL?.trim();
+    const webAppUrl = configuredWebUrl || (domain ? `https://${domain}` : "http://localhost:3000");
     const paystackSecret = process.env.ROOMXCHANGE_PAYSTACK_SECRET_KEY ?? "replace-me";
     const paystackPlanCode = process.env.ROOMXCHANGE_PAYSTACK_PLAN_CODE ?? "replace-me";
 
@@ -124,7 +126,7 @@ export class RoomXchangeStack extends Stack {
       MEDIA_CDN_URL: `https://${mediaDistribution.distributionDomainName}`,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
-      WEB_APP_URL: `https://${domain}`,
+      WEB_APP_URL: webAppUrl,
       PAYSTACK_SECRET_KEY: paystackSecret,
       PAYSTACK_PLAN_CODE: paystackPlanCode
     };
@@ -247,7 +249,7 @@ export class RoomXchangeStack extends Stack {
       buildPath: path.join(repoRoot, "apps/web/.open-next"),
       environment: {
         NEXT_PUBLIC_ROOMXCHANGE_API_URL: api.url,
-        NEXT_PUBLIC_ROOMXCHANGE_WEB_URL: `https://${domain}`,
+        NEXT_PUBLIC_ROOMXCHANGE_WEB_URL: webAppUrl,
         NEXT_PUBLIC_ROOMXCHANGE_MEDIA_URL: `https://${mediaDistribution.distributionDomainName}`
       }
     });

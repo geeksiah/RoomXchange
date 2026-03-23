@@ -38,18 +38,27 @@ npm run dev:web
 npm run dev:mobile
 ```
 
+6. Or start web, mobile, and backend together.
+
+```bash
+npm run dev
+```
+
 ## Environment
 
 The stack expects these values at minimum:
 
 - `ROOMXCHANGE_STAGE`
-- `ROOMXCHANGE_DOMAIN`
 - `ROOMXCHANGE_PAYSTACK_SECRET_KEY`
 - `ROOMXCHANGE_PAYSTACK_PLAN_CODE`
 - `ROOMXCHANGE_MAPBOX_PUBLIC_TOKEN`
 - `ROOMXCHANGE_API_URL`
-- `ROOMXCHANGE_WEB_URL`
 - `ROOMXCHANGE_MEDIA_URL`
+
+Optional while your final domain is not ready:
+
+- `ROOMXCHANGE_DOMAIN`
+- `ROOMXCHANGE_WEB_URL`
 
 For client apps, also expose:
 
@@ -63,6 +72,8 @@ For client apps, also expose:
 - `EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN`
 
 ## AWS deployment
+
+You can deploy before your custom domain is ready. The stack will still return working AWS URLs, and you can connect a real domain later.
 
 1. Build the Next.js OpenNext bundle.
 
@@ -83,6 +94,14 @@ npm run cdk:synth
 npm run cdk:deploy
 ```
 
+4. Copy the CDK outputs and feed them back into your env file.
+
+- `ApiUrl` -> `NEXT_PUBLIC_ROOMXCHANGE_API_URL` and `EXPO_PUBLIC_ROOMXCHANGE_API_URL`
+- `WebUrl` -> `ROOMXCHANGE_WEB_URL`, `NEXT_PUBLIC_ROOMXCHANGE_WEB_URL`, and `EXPO_PUBLIC_ROOMXCHANGE_WEB_URL`
+- `MediaUrl` -> `NEXT_PUBLIC_ROOMXCHANGE_MEDIA_URL` and `EXPO_PUBLIC_ROOMXCHANGE_MEDIA_URL`
+
+5. Rebuild the web bundle and redeploy after you set those output values.
+
 The CDK stack provisions:
 
 - `RoomXchange` DynamoDB single table with operational GSIs.
@@ -96,3 +115,4 @@ The CDK stack provisions:
 
 - The current machine where this repo was scaffolded has broken `npm`/`pnpm` wrapper behavior, so dependency installation and runtime validation were not completed here.
 - The remote GitHub repo was not available locally during implementation, so this repo was created from scratch under `c:\Users\abbas\Documents\RoomXchange`.
+- A custom domain can be attached later by adding Route53, ACM, and custom domain mappings to the CloudFront and API Gateway endpoints.

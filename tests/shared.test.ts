@@ -15,6 +15,6 @@ describe("shared utilities", () => {
   });
 
   it("builds the subscribe URL", () => {
-    expect(buildSubscribeUrl("abc123")).toContain("/subscribe?reference=abc123");
+    expect(buildSubscribeUrl("abc123")).toBe("http://localhost:3000/subscribe?reference=abc123");
   });
 });

@@ -13,7 +13,7 @@ const config: ExpoConfig = {
   plugins: ["expo-router"],
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_API_URL ?? "",
-    webUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_WEB_URL ?? "https://roomxchange.com"
+    webUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_WEB_URL ?? "http://localhost:3000"
   }
 };
 

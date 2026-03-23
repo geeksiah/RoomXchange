@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "dev": "node ./scripts/dev.mjs",
     "dev:web": "npm run dev --workspace @roomxchange/web",
     "dev:mobile": "npm run dev --workspace @roomxchange/mobile",
     "dev:backend": "npm run dev --workspace @roomxchange/backend",

@@ -38,7 +38,7 @@ import {
 
 const defaultConfig = {
   apiUrl: process.env.NEXT_PUBLIC_ROOMXCHANGE_API_URL ?? process.env.EXPO_PUBLIC_ROOMXCHANGE_API_URL ?? "",
-  webUrl: process.env.NEXT_PUBLIC_ROOMXCHANGE_WEB_URL ?? process.env.EXPO_PUBLIC_ROOMXCHANGE_WEB_URL ?? "https://roomxchange.com",
+  webUrl: process.env.NEXT_PUBLIC_ROOMXCHANGE_WEB_URL ?? process.env.EXPO_PUBLIC_ROOMXCHANGE_WEB_URL ?? "",
   mediaUrl:
     process.env.NEXT_PUBLIC_ROOMXCHANGE_MEDIA_URL ??
     process.env.EXPO_PUBLIC_ROOMXCHANGE_MEDIA_URL ??
@@ -115,7 +115,10 @@ export function isAllowedVrUrl(url: string) {
 }
 
 export function buildSubscribeUrl(reference?: string) {
-  const url = new URL("/subscribe", roomXchangeConfig.webUrl);
+  const baseUrl =
+    roomXchangeConfig.webUrl ||
+    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+  const url = new URL("/subscribe", baseUrl);
   if (reference) {
     url.searchParams.set("reference", reference);
   }

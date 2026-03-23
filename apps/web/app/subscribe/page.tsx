@@ -17,7 +17,9 @@ export default function SubscribePage() {
 
   const checkoutMutation = useMutation({
     mutationFn: async () => {
-      const result = await api.createCheckoutLink();
+      const result = await api.createCheckoutLink({
+        successUrl: `${window.location.origin}/success`
+      });
       window.location.href = result.authorizationUrl;
     },
     onError: (mutationError) => {
