@@ -1,16 +1,16 @@
 import { spawn } from "node:child_process";
 
 const commands = [
-  { name: "web", args: ["run", "dev:web"] },
-  { name: "mobile", args: ["run", "dev:mobile"] },
-  { name: "backend", args: ["run", "dev:backend"] }
+  { name: "web", command: "npm run dev:web" },
+  { name: "mobile", command: "npm run dev:mobile" },
+  { name: "backend", command: "npm run dev:backend" }
 ];
 
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const children = commands.map(({ name, args }) => {
-  const child = spawn(npmCommand, args, {
+const children = commands.map(({ name, command }) => {
+  const child = spawn(command, {
     stdio: "pipe",
-    shell: false,
+    shell: true,
+    windowsHide: false,
     env: process.env
   });
 
