@@ -6,7 +6,7 @@
   "main": "./src/handlers/api.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsx watch src/handlers/api.ts"
+    "dev": "tsx watch src/dev-server.ts"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.703.0",

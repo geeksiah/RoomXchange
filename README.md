@@ -44,6 +44,14 @@ npm run dev:mobile
 npm run dev
 ```
 
+For local full-stack development, the backend can read these values from `.env` after your first AWS deploy:
+
+- `ROOMXCHANGE_TABLE_NAME`
+- `ROOMXCHANGE_MEDIA_BUCKET_NAME`
+- `ROOMXCHANGE_MEDIA_CDN_URL`
+- `ROOMXCHANGE_USER_POOL_ID`
+- `ROOMXCHANGE_USER_POOL_CLIENT_ID`
+
 ## Environment
 
 The stack expects these values at minimum:
@@ -59,6 +67,14 @@ Optional while your final domain is not ready:
 
 - `ROOMXCHANGE_DOMAIN`
 - `ROOMXCHANGE_WEB_URL`
+
+Needed for local backend development after AWS resources exist:
+
+- `ROOMXCHANGE_TABLE_NAME`
+- `ROOMXCHANGE_MEDIA_BUCKET_NAME`
+- `ROOMXCHANGE_MEDIA_CDN_URL`
+- `ROOMXCHANGE_USER_POOL_ID`
+- `ROOMXCHANGE_USER_POOL_CLIENT_ID`
 
 For client apps, also expose:
 
@@ -99,6 +115,11 @@ npm run cdk:deploy
 - `ApiUrl` -> `NEXT_PUBLIC_ROOMXCHANGE_API_URL` and `EXPO_PUBLIC_ROOMXCHANGE_API_URL`
 - `WebUrl` -> `ROOMXCHANGE_WEB_URL`, `NEXT_PUBLIC_ROOMXCHANGE_WEB_URL`, and `EXPO_PUBLIC_ROOMXCHANGE_WEB_URL`
 - `MediaUrl` -> `NEXT_PUBLIC_ROOMXCHANGE_MEDIA_URL` and `EXPO_PUBLIC_ROOMXCHANGE_MEDIA_URL`
+- `TableName` -> `ROOMXCHANGE_TABLE_NAME`
+- `MediaBucketName` -> `ROOMXCHANGE_MEDIA_BUCKET_NAME`
+- `MediaUrl` -> `ROOMXCHANGE_MEDIA_CDN_URL`
+- `UserPoolId` -> `ROOMXCHANGE_USER_POOL_ID`
+- `UserPoolClientId` -> `ROOMXCHANGE_USER_POOL_CLIENT_ID`
 
 5. Rebuild the web bundle and redeploy after you set those output values.
 

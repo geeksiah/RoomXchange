@@ -255,6 +255,8 @@ export class RoomXchangeStack extends Stack {
     });
 
     new CfnOutput(this, "ApiUrl", { value: api.url });
+    new CfnOutput(this, "TableName", { value: table.tableName });
+    new CfnOutput(this, "MediaBucketName", { value: mediaBucket.bucketName });
     new CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new CfnOutput(this, "UserPoolClientId", { value: userPoolClient.userPoolClientId });
     new CfnOutput(this, "MediaUrl", { value: `https://${mediaDistribution.distributionDomainName}` });
