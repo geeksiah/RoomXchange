@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "expo start --clear",
+    "dev:go": "expo start --clear --go --tunnel",
+    "dev:client": "expo start --clear --dev-client --tunnel",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "build": "expo export --platform all"
