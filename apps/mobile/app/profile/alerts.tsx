@@ -5,6 +5,7 @@ import { formatListingSubtypeLabel } from "@roomxchange/shared";
 import { BackIconButton } from "../../src/components/back-icon-button";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { PriceRangeSlider } from "../../src/components/price-range-slider";
+import { ScreenHeader } from "../../src/components/screen-header";
 import { ScaleButton } from "../../src/components/scale-button";
 import { useSession } from "../../src/session-provider";
 import { useNotificationStore } from "../../src/stores/notification-store";
@@ -38,19 +39,12 @@ export default function AlertsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
       <DismissKeyboardView className="flex-1">
+        <ScreenHeader title="Saved alerts" left={<BackIconButton fallbackPath="/profile" />} />
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: 176 }}
           showsVerticalScrollIndicator={false}
         >
-          <View className="px-4 pb-4 pt-3">
-            <View className="flex-row items-center justify-between">
-              <BackIconButton fallbackPath="/profile" />
-              <Text className="font-jakarta-bold text-2xl text-rx-text">Saved alerts</Text>
-              <View className="w-11" />
-            </View>
-          </View>
-
           <View className="px-4">
             <View
               className="rounded-[32px] bg-white px-5 pb-7 pt-4"

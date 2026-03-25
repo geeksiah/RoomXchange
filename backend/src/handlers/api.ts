@@ -68,6 +68,7 @@ import {
   updateUserNotification,
   upsertUserReminder
 } from "../notifications.js";
+import { registerPushToken, unregisterPushToken } from "../push.js";
 import { assertAdmin, createReport, getMyReports, getReports, updateReport } from "../reports.js";
 import { createCheckoutLink, getSubscriptionStatus, verifySubscription } from "../subscriptions.js";
 import { createPresignedUpload } from "../uploads.js";
@@ -117,6 +118,8 @@ const routePatterns = [
   "/app/notifications/clear",
   "/app/notifications/{id}",
   "/app/notifications",
+  "/app/push-token/register",
+  "/app/push-token/unregister",
   "/app/reminders/{id}",
   "/app/reminders",
   "/app/notification-settings",
@@ -314,6 +317,22 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }
 
       return ok(await clearUserNotifications(currentUserId));
+    }
+
+    if (resource === "/app/push-token/register" && event.httpMethod === "POST") {
+      if (!currentUserId) {
+        throw new AppError(401, "Authentication is required.");
+      }
+
+      return ok(await registerPushToken(currentUserId, parseBody(event, passthroughSchema)));
+    }
+
+    if (resource === "/app/push-token/unregister" && event.httpMethod === "POST") {
+      if (!currentUserId) {
+        throw new AppError(401, "Authentication is required.");
+      }
+
+      return ok(await unregisterPushToken(currentUserId, parseBody(event, passthroughSchema)));
     }
 
     if (resource === "/app/reminders" && event.httpMethod === "GET") {

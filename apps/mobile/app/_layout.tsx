@@ -47,6 +47,7 @@ export default function RootLayout() {
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="notifications" />
                   <Stack.Screen name="profile/alerts" />
+                  <Stack.Screen name="profile/about" />
                   <Stack.Screen name="profile/listings" />
                   <Stack.Screen name="profile/listings/[id]" />
                   <Stack.Screen name="publishers/[userId]" />

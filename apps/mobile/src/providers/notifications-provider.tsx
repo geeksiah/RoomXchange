@@ -1,6 +1,8 @@
-import { useEffect, type ReactNode } from "react";
+import * as SecureStore from "expo-secure-store";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "expo-router";
 import { Animated, AppState, Text, View } from "react-native";
+import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { ScaleButton } from "../components/scale-button";
 import { useSession } from "../session-provider";
@@ -16,6 +18,7 @@ Notifications.setNotificationHandler({
 });
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
+  const pushPreferenceKey = "roomxchange.mobile.push-enabled";
   const router = useRouter();
   const { api, session } = useSession();
   const banners = useNotificationStore((state) => state.banners);
@@ -24,11 +27,32 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const setExpoPushToken = useNotificationStore((state) => state.setExpoPushToken);
   const setPushConfigured = useNotificationStore((state) => state.setPushConfigured);
   const pushEnabled = useNotificationStore((state) => state.pushEnabled);
+  const setPushEnabled = useNotificationStore((state) => state.setPushEnabled);
+  const expoPushToken = useNotificationStore((state) => state.expoPushToken);
   const settings = useNotificationStore((state) => state.settings);
   const setRemoteSettings = useNotificationStore((state) => state.setRemoteSettings);
   const setNotifications = useNotificationStore((state) => state.setNotifications);
   const setReminders = useNotificationStore((state) => state.setReminders);
   const createNotification = useNotificationStore((state) => state.createNotification);
+  const registeredTokenRef = useRef<{ userId: string; token: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    SecureStore.getItemAsync(pushPreferenceKey).then((value) => {
+      if (!active || value == null) {
+        return;
+      }
+      setPushEnabled(value === "true");
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [setPushEnabled]);
+
+  useEffect(() => {
+    void SecureStore.setItemAsync(pushPreferenceKey, String(pushEnabled));
+  }, [pushEnabled]);
 
   useEffect(() => {
     if (!session) {
@@ -121,6 +145,59 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       subscription.remove();
     };
   }, [createNotification, pushEnabled, setExpoPushToken, setPermissionStatus, setPushConfigured, settings.pushEnabled]);
+
+  useEffect(() => {
+    let active = true;
+    const syncPushToken = async () => {
+      const shouldRegister = Boolean(session?.user.userId && expoPushToken && pushEnabled && settings.pushEnabled);
+      const previousRegistration = registeredTokenRef.current;
+
+      if (!shouldRegister) {
+        if (previousRegistration && session?.user.userId === previousRegistration.userId) {
+          try {
+            await api.unregisterPushToken({ token: previousRegistration.token });
+          } catch {
+            return;
+          } finally {
+            if (active) {
+              registeredTokenRef.current = null;
+            }
+          }
+        }
+        return;
+      }
+
+      const nextRegistration = {
+        userId: session!.user.userId,
+        token: expoPushToken!
+      };
+
+      if (previousRegistration?.userId === nextRegistration.userId && previousRegistration.token === nextRegistration.token) {
+        return;
+      }
+
+      try {
+        if (previousRegistration?.userId === nextRegistration.userId && previousRegistration.token !== nextRegistration.token) {
+          await api.unregisterPushToken({ token: previousRegistration.token });
+        }
+        await api.registerPushToken({
+          token: expoPushToken!,
+          platform: Platform.OS === "ios" ? "ios" : "android"
+        });
+        if (active) {
+          registeredTokenRef.current = nextRegistration;
+        }
+      } catch {
+        return;
+      }
+    };
+
+    void syncPushToken();
+
+    return () => {
+      active = false;
+    };
+  }, [api, expoPushToken, pushEnabled, session, settings.pushEnabled]);
 
   useEffect(() => {
     if (!banners.length) {

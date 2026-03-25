@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "66130870579",
+    "project_id": "roomxchange-6fb6d",
+    "storage_bucket": "roomxchange-6fb6d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66130870579:android:9a95566fa94704f256be46",
+        "android_client_info": {
+          "package_name": "com.roomxchange.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDs6-CGgfet-W3xLiLEX9YWzc3pWeicES8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

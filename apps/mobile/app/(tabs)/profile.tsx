@@ -169,6 +169,12 @@ export default function ProfileScreen() {
                 description={`${profileListings.length} listing${profileListings.length === 1 ? "" : "s"} in your portfolio`}
                 onPress={() => router.push("/profile/listings")}
               />
+              <ProfileMenuRow
+                icon="information-circle-outline"
+                title="About app"
+                description="Version, device info, and support options"
+                onPress={() => router.push({ pathname: "/profile/about" } as never)}
+              />
             </View>
           </View>
 

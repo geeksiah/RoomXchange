@@ -419,6 +419,7 @@ export const notificationSettingsSchema = z.object({
 });
 
 export const notificationKinds = ["message", "listing_match", "system"] as const;
+export const pushPlatforms = ["ios", "android"] as const;
 
 export const notificationRecordSchema = z.object({
   id: z.string().trim().min(1).max(128),
@@ -448,6 +449,15 @@ export const reminderUpsertInputSchema = reminderPreferenceSchema
 
 export const notificationUpdateSchema = z.object({
   read: z.boolean()
+});
+
+export const pushTokenUpsertSchema = z.object({
+  token: z.string().trim().min(8).max(256),
+  platform: z.enum(pushPlatforms)
+});
+
+export const pushTokenDeleteSchema = z.object({
+  token: z.string().trim().min(8).max(256)
 });
 
 export const notificationsListResponseSchema = z.object({
@@ -549,5 +559,7 @@ export type NotificationRecord = z.infer<typeof notificationRecordSchema>;
 export type ReminderPreference = z.infer<typeof reminderPreferenceSchema>;
 export type ReminderUpsertInput = z.infer<typeof reminderUpsertInputSchema>;
 export type NotificationUpdateInput = z.infer<typeof notificationUpdateSchema>;
+export type PushTokenUpsertInput = z.infer<typeof pushTokenUpsertSchema>;
+export type PushTokenDeleteInput = z.infer<typeof pushTokenDeleteSchema>;
 export type NotificationsListResponse = z.infer<typeof notificationsListResponseSchema>;
 export type RemindersListResponse = z.infer<typeof remindersListResponseSchema>;

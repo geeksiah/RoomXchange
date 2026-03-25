@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, FlatList, Text, View } from "react-native";
@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { ConversationItem } from "../../src/components/conversation-item";
 import { ScaleButton } from "../../src/components/scale-button";
+import { ScreenHeader } from "../../src/components/screen-header";
 import { useSession } from "../../src/session-provider";
 import { useChatStore } from "../../src/stores/chat-store";
 
@@ -17,6 +18,7 @@ export default function MessagesScreen() {
   const syncUnreadCounts = useChatStore((state) => state.syncUnreadCounts);
   const clearAllUnread = useChatStore((state) => state.clearAllUnread);
   const removeConversation = useChatStore((state) => state.removeConversation);
+  const [selectedConversationIds, setSelectedConversationIds] = useState<string[]>([]);
 
   const conversationsQuery = useQuery({
     queryKey: ["conversations"],
@@ -46,6 +48,19 @@ export default function MessagesScreen() {
     }
   });
 
+  const conversations = conversationsQuery.data?.items ?? [];
+  const selecting = selectedConversationIds.length > 0;
+  const hasUnread = useMemo(
+    () => conversations.some((item) => (unreadCounts[item.conversationId] ?? item.unreadCount) > 0),
+    [conversations, unreadCounts]
+  );
+
+  const toggleConversationSelection = (conversationId: string) => {
+    setSelectedConversationIds((current) =>
+      current.includes(conversationId) ? current.filter((item) => item !== conversationId) : [...current, conversationId]
+    );
+  };
+
   if (!session) {
     return (
       <SafeAreaView className="flex-1 bg-rx-background">
@@ -62,30 +77,59 @@ export default function MessagesScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
+      <ScreenHeader
+        title={selecting ? `${selectedConversationIds.length} selected` : "Messages"}
+        right={
+          selecting ? (
+            <ScaleButton
+              onPress={() =>
+                Alert.alert("Delete selected conversations", "These conversations will be removed only from your inbox.", [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                      const ids = [...selectedConversationIds];
+                      setSelectedConversationIds([]);
+                      await Promise.all(ids.map((id) => deleteConversationMutation.mutateAsync(id)));
+                    }
+                  }
+                ])
+              }
+              className="rounded-full bg-rx-accent px-3 py-2"
+            >
+              <Text className="font-jakarta-bold text-[11px] text-white">
+                {deleteConversationMutation.isPending ? "Deleting..." : "Delete"}
+              </Text>
+            </ScaleButton>
+          ) : hasUnread ? (
+            <ScaleButton onPress={() => markAllReadMutation.mutate()} className="rounded-full bg-rx-background px-3 py-2">
+              <Text className="font-jakarta-bold text-[11px] text-rx-text">
+                {markAllReadMutation.isPending ? "Updating..." : "Mark all read"}
+              </Text>
+            </ScaleButton>
+          ) : undefined
+        }
+      />
       <FlatList
-        data={conversationsQuery.data?.items ?? []}
+        data={conversations}
         keyExtractor={(item) => item.conversationId}
         contentContainerStyle={{ padding: 16, paddingBottom: 176 }}
-        ListHeaderComponent={
-          <View className="mb-5 flex-row items-center justify-between">
-            <View>
-              <Text className="font-jakarta-bold text-3xl text-rx-text">Messages</Text>
-              <Text className="mt-1 font-jakarta text-sm text-rx-muted">Your active conversations</Text>
-            </View>
-            {(conversationsQuery.data?.items ?? []).some((item) => (unreadCounts[item.conversationId] ?? item.unreadCount) > 0) ? (
-              <ScaleButton onPress={() => markAllReadMutation.mutate()} className="rounded-full bg-white px-4 py-2.5">
-                <Text className="font-jakarta-bold text-xs text-rx-text">
-                  {markAllReadMutation.isPending ? "Updating..." : "Mark all read"}
-                </Text>
-              </ScaleButton>
-            ) : null}
-          </View>
-        }
+        ListHeaderComponent={<Text className="mb-4 font-jakarta text-sm text-rx-muted">{selecting ? "Choose conversations to delete from your inbox." : "Your active conversations"}</Text>}
         renderItem={({ item }) => (
           <ConversationItem
             conversation={item}
             unreadCount={unreadCounts[item.conversationId] ?? item.unreadCount}
-            onPress={() => router.push({ pathname: "/messages/[conversationId]", params: { conversationId: item.conversationId } } as never)}
+            selecting={selecting}
+            selected={selectedConversationIds.includes(item.conversationId)}
+            onLongPress={() => toggleConversationSelection(item.conversationId)}
+            onPress={() => {
+              if (selecting) {
+                toggleConversationSelection(item.conversationId);
+                return;
+              }
+              router.push({ pathname: "/messages/[conversationId]", params: { conversationId: item.conversationId } } as never);
+            }}
             onDelete={() =>
               Alert.alert("Delete conversation", "This removes the conversation from your inbox.", [
                 { text: "Cancel", style: "cancel" },

@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AddListingWizard } from "../../../src/components/add-listing-wizard";
 import { AuthRedirectCard } from "../../../src/components/auth-redirect-card";
 import { BackIconButton } from "../../../src/components/back-icon-button";
+import { ScreenHeader } from "../../../src/components/screen-header";
 import { useSession } from "../../../src/session-provider";
 
 export default function EditListingScreen() {
@@ -34,12 +35,8 @@ export default function EditListingScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
+      <ScreenHeader title="Edit listing" left={<BackIconButton fallbackPath="/profile/listings" />} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 180 }}>
-        <View className="mb-5 flex-row items-center justify-between">
-          <BackIconButton fallbackPath="/profile/listings" />
-          <Text className="font-jakarta-bold text-2xl text-rx-text">Edit listing</Text>
-          <View className="w-11" />
-        </View>
 
         {listingQuery.data ? (
           <AddListingWizard

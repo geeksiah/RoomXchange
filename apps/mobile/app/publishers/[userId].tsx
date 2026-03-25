@@ -8,6 +8,7 @@ import { Avatar } from "../../src/components/avatar";
 import { BackIconButton } from "../../src/components/back-icon-button";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { PropertyCard } from "../../src/components/property-card";
+import { ScreenHeader } from "../../src/components/screen-header";
 import { ScaleButton } from "../../src/components/scale-button";
 import { openPhoneCall, openWhatsApp } from "../../src/lib/contact-actions";
 import { useSession } from "../../src/session-provider";
@@ -55,19 +56,18 @@ export default function PublisherProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
       <DismissKeyboardView className="flex-1">
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
-          <View className="mb-5 flex-row items-center justify-between">
-            <BackIconButton fallbackPath="/" />
-            <Text className="font-jakarta-bold text-2xl text-rx-text">Publisher</Text>
-            {session ? (
+        <ScreenHeader
+          title="Publisher"
+          left={<BackIconButton fallbackPath="/" />}
+          right={
+            session ? (
               <ScaleButton onPress={() => setReportVisible(true)} className="h-11 w-11 items-center justify-center rounded-full bg-white">
                 <Ionicons name="flag-outline" size={18} color="#111111" />
               </ScaleButton>
-            ) : (
-              <View className="w-11" />
-            )}
-          </View>
-
+            ) : undefined
+          }
+        />
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
           <View className="rounded-3xl bg-white p-5">
             <View className="flex-row items-center">
               <Avatar name={publisher.name} avatar={publisher.avatar} size={64} />

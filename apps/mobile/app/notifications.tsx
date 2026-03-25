@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { FlatList, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BackIconButton } from "../src/components/back-icon-button";
+import { ScreenHeader } from "../src/components/screen-header";
 import { ScaleButton } from "../src/components/scale-button";
 import { formatConversationTimestamp } from "@roomxchange/shared";
 import { useSession } from "../src/session-provider";
@@ -17,36 +18,50 @@ export default function NotificationsScreen() {
   const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
   const deleteNotification = useNotificationStore((state) => state.deleteNotification);
   const clearNotifications = useNotificationStore((state) => state.clearNotifications);
+  const settings = useNotificationStore((state) => state.settings);
 
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
-      <View className="flex-row items-center justify-between px-4 pb-4 pt-3">
-        <BackIconButton fallbackPath="/" />
-        <Text className="font-jakarta-bold text-2xl text-rx-text">Notifications</Text>
-        <ScaleButton
-          onPress={async () => {
-            markAllAsRead();
-            try {
-              await api.markAllNotificationsRead();
-            } catch {
-              const refreshed = await api.getNotifications().catch(() => null);
-              if (refreshed) {
-                useNotificationStore.getState().setNotifications(refreshed.items);
+      <ScreenHeader
+        title="Notifications"
+        left={<BackIconButton fallbackPath="/" />}
+        right={
+          <ScaleButton
+            onPress={async () => {
+              markAllAsRead();
+              try {
+                await api.markAllNotificationsRead();
+              } catch {
+                const refreshed = await api.getNotifications().catch(() => null);
+                if (refreshed) {
+                  useNotificationStore.getState().setNotifications(refreshed.items);
+                }
               }
-            }
-          }}
-          className="rounded-full bg-white px-4 py-2"
-        >
-          <Text className="font-jakarta text-xs text-rx-text">Read all</Text>
-        </ScaleButton>
-      </View>
+            }}
+            className="rounded-full bg-rx-background px-3 py-2"
+          >
+            <Text className="font-jakarta text-[11px] text-rx-text">Read all</Text>
+          </ScaleButton>
+        }
+      />
 
       <View className="mx-4 mb-4 flex-row items-center justify-between rounded-3xl bg-white p-4">
         <View className="mr-4 flex-1">
           <Text className="font-jakarta-bold text-sm text-rx-text">Push notifications</Text>
-          <Text className="mt-1 font-jakarta text-sm text-rx-muted">Turn alerts on or off for new matches and messages.</Text>
+          <Text className="mt-1 font-jakarta text-sm text-rx-muted">
+            Turn device alerts on or off for new matches and messages.
+          </Text>
         </View>
         <Switch value={pushEnabled} onValueChange={setPushEnabled} trackColor={{ false: "#EAEAEA", true: "#FFB6C4" }} thumbColor={pushEnabled ? "#FF385C" : "#FFFFFF"} />
+      </View>
+
+      <View className="mx-4 mb-4 rounded-3xl bg-white p-4">
+        <Text className="font-jakarta-bold text-sm text-rx-text">System notification status</Text>
+        <Text className="mt-1 font-jakarta text-sm text-rx-muted">
+          {settings.pushEnabled
+            ? "Notifications are enabled by the app."
+            : "Notifications are currently disabled by the app administrator."}
+        </Text>
       </View>
 
       <FlatList

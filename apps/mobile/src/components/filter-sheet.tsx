@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Animated, Easing, Modal, PanResponder, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { Animated, Easing, Modal, PanResponder, Pressable, ScrollView, Switch, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { BlurView } from "expo-blur";
 import { formatListingSubtypeLabel } from "@roomxchange/shared";
 import { PriceRangeSlider } from "./price-range-slider";
@@ -8,13 +8,10 @@ import { ScaleButton } from "./scale-button";
 import { useSearchStore } from "../stores/search-store";
 
 export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const translateY = useRef(new Animated.Value(520)).current;
-  const startY = useRef(520);
-  const backdropOpacity = translateY.interpolate({
-    inputRange: [0, 520],
-    outputRange: [1, 0],
-    extrapolate: "clamp"
-  });
+  const { height } = useWindowDimensions();
+  const hiddenY = Math.max(560, height);
+  const translateY = useRef(new Animated.Value(hiddenY)).current;
+  const startY = useRef(hiddenY);
   const easing = Easing.bezier(0.22, 1, 0.36, 1);
   const {
     location,
@@ -33,8 +30,8 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
 
   const closeSheet = () => {
     Animated.timing(translateY, {
-      toValue: 520,
-      duration: 240,
+      toValue: hiddenY,
+      duration: 280,
       easing,
       useNativeDriver: true
     }).start(({ finished }) => {
@@ -52,7 +49,7 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
           startY.current = (translateY as any).__getValue();
         },
         onPanResponderMove: (_, gestureState) => {
-          translateY.setValue(Math.max(0, startY.current + gestureState.dy));
+          translateY.setValue(Math.min(hiddenY, Math.max(0, startY.current + gestureState.dy)));
         },
         onPanResponderRelease: (_, gestureState) => {
           const current = startY.current + gestureState.dy;
@@ -63,43 +60,39 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
 
           Animated.timing(translateY, {
             toValue: 0,
-            duration: 240,
+            duration: 280,
             easing,
             useNativeDriver: true
           }).start();
         }
       }),
-    [translateY]
+    [easing, hiddenY, translateY]
   );
 
   useEffect(() => {
     if (!visible) {
-      translateY.setValue(520);
+      translateY.setValue(hiddenY);
       return;
     }
 
     Animated.timing(translateY, {
       toValue: 0,
-      duration: 240,
+      duration: 280,
       easing,
       useNativeDriver: true
     }).start();
-  }, [easing, translateY, visible]);
+  }, [easing, hiddenY, translateY, visible]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={closeSheet}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={closeSheet}>
       <View className="flex-1 justify-end">
-        <Animated.View
-          pointerEvents="none"
-          style={{ opacity: backdropOpacity }}
-          className="absolute inset-0"
-        >
+        <View pointerEvents="none" className="absolute inset-0">
           <BlurView intensity={34} tint="light" style={{ flex: 1 }} />
           <View className="absolute inset-0 bg-white/24" />
-        </Animated.View>
-        <ScaleButton onPress={closeSheet} className="flex-1 bg-transparent">
+        </View>
+        <Pressable onPress={closeSheet} className="flex-1 bg-transparent">
           <View />
-        </ScaleButton>
+        </Pressable>
         <Animated.View
           style={{
             transform: [{ translateY }],

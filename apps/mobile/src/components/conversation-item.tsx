@@ -9,15 +9,22 @@ export function ConversationItem({
   conversation,
   unreadCount,
   onPress,
-  onDelete
+  onDelete,
+  onLongPress,
+  selected,
+  selecting
 }: {
   conversation: ConversationSummary;
   unreadCount: number;
   onPress: () => void;
   onDelete: () => void;
+  onLongPress?: () => void;
+  selected?: boolean;
+  selecting?: boolean;
 }) {
   return (
     <Swipeable
+      enabled={!selecting}
       overshootRight={false}
       renderRightActions={() => (
         <View className="mb-3 ml-3 w-[92px] overflow-hidden rounded-2xl bg-rx-accent">
@@ -28,8 +35,13 @@ export function ConversationItem({
         </View>
       )}
     >
-      <ScaleButton onPress={onPress} className="mb-3 rounded-2xl bg-white px-4 py-3.5">
+      <ScaleButton onPress={onPress} onLongPress={onLongPress} className="mb-3 rounded-2xl bg-white px-4 py-3.5">
         <View className="flex-row items-center">
+          {selecting ? (
+            <View className={`mr-3 h-6 w-6 items-center justify-center rounded-full border ${selected ? "border-rx-accent bg-rx-accent" : "border-rx-border bg-white"}`}>
+              {selected ? <Ionicons name="checkmark" size={15} color="#FFFFFF" /> : null}
+            </View>
+          ) : null}
           <Avatar name={conversation.participant.name} avatar={conversation.participant.avatar} size={48} />
           <View className="mx-3 flex-1 pr-2">
             <Text className="font-jakarta-bold text-base text-rx-text" numberOfLines={1}>
