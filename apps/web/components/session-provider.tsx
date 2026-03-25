@@ -6,12 +6,14 @@ import { createApiClient, roomXchangeConfig, type AuthSession } from "@roomxchan
 type SessionContextValue = {
   session: AuthSession | null;
   api: ReturnType<typeof createApiClient>;
+  adminLogin: (email: string, password: string) => Promise<void>;
   setSession: (session: AuthSession | null) => void;
   refreshProfile: () => Promise<void>;
   logout: () => void;
 };
 
 const storageKey = "roomxchange.web.session";
+const localApiFallback = process.env.NODE_ENV === "development" ? "http://localhost:4000" : "";
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
@@ -28,7 +30,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const api = useMemo(
     () =>
       createApiClient({
-        baseUrl: roomXchangeConfig.apiUrl,
+        baseUrl: roomXchangeConfig.apiUrl || localApiFallback,
         getAccessToken: () => session?.tokens.accessToken ?? null
       }),
     [session?.tokens.accessToken]
@@ -45,6 +47,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const logout = () => setSession(null);
 
+  const adminLogin = async (email: string, password: string) => {
+    const nextSession = await api.adminLogin({ email, password });
+    setSession(nextSession);
+  };
+
   const refreshProfile = async () => {
     if (!session) {
       return;
@@ -57,7 +64,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  return <SessionContext.Provider value={{ session, api, setSession, refreshProfile, logout }}>{children}</SessionContext.Provider>;
+  return <SessionContext.Provider value={{ session, api, adminLogin, setSession, refreshProfile, logout }}>{children}</SessionContext.Provider>;
 }
 
 export function useSession() {

@@ -40,7 +40,7 @@ export class OpenNextSite extends Construct {
       runtime: Runtime.NODEJS_20_X,
       architecture: Architecture.ARM_64,
       handler: "index.handler",
-      code: Code.fromAsset(path.join(buildPath, "server-function")),
+      code: Code.fromAsset(path.join(buildPath, "server-functions", "default")),
       memorySize: 1536,
       timeout: Duration.seconds(30),
       environment

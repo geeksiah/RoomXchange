@@ -9,8 +9,12 @@ const envFields = {
   USER_POOL_ID: z.string().min(3),
   USER_POOL_CLIENT_ID: z.string().min(3),
   WEB_APP_URL: z.string().url().default("http://localhost:3000"),
+  WEBSOCKET_API_ENDPOINT: z.string().url().optional(),
   PAYSTACK_SECRET_KEY: z.string().min(3),
   PAYSTACK_PLAN_CODE: z.string().min(3),
+  ADMIN_WEB_EMAIL: z.string().email().default("abbas.demo@roomxchange.dev"),
+  ADMIN_WEB_PHONE: z.string().default("+233240000001"),
+  ADMIN_WEB_PASSWORD: z.string().min(8).default("Admin@12345"),
   OTP_SMS_TEMPLATE: z.string().default("Your RoomXchange verification code is {{code}}"),
   SUPPORT_EMAIL: z.string().email().default("support@roomxchange.com")
 } as const;
@@ -22,6 +26,7 @@ const aliases: Partial<Record<keyof typeof envFields, string[]>> = {
   USER_POOL_ID: ["ROOMXCHANGE_USER_POOL_ID"],
   USER_POOL_CLIENT_ID: ["ROOMXCHANGE_USER_POOL_CLIENT_ID"],
   WEB_APP_URL: ["ROOMXCHANGE_WEB_URL"],
+  WEBSOCKET_API_ENDPOINT: ["ROOMXCHANGE_WEBSOCKET_API_ENDPOINT"],
   PAYSTACK_SECRET_KEY: ["ROOMXCHANGE_PAYSTACK_SECRET_KEY"],
   PAYSTACK_PLAN_CODE: ["ROOMXCHANGE_PAYSTACK_PLAN_CODE"]
 };
@@ -42,7 +47,7 @@ function getEnvValue<K extends keyof typeof envFields>(key: K): Env[K] {
     const names = [key, ...(aliases[key] ?? [])].join(" / ");
     throw new Error(`Missing or invalid environment variable: ${names}`);
   }
-  return parsed.data;
+  return parsed.data as Env[K];
 }
 
 export const env = new Proxy(

@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -14,7 +13,7 @@ export const metadata = {
   description: "A premium peer-to-peer property marketplace with web-only subscription checkout."
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: any }) {
   return (
     <html lang="en" className={plusJakartaSans.variable}>
       <body style={{ fontFamily: "var(--font-plus-jakarta)" }}>

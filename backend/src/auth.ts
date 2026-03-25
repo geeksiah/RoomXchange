@@ -87,7 +87,9 @@ function toPublicUser(item: UserItem): UserProfile {
     name: item.name,
     avatar: item.avatar ?? null,
     email: item.email ?? null,
+    phonePublic: item.phonePublic ?? false,
     role: item.role,
+    accountStatus: item.accountStatus ?? "active",
     isSubscribed: item.isSubscribed,
     subscriptionStatus: item.subscriptionStatus,
     subscriptionProvider: item.subscriptionProvider ?? null,
@@ -112,7 +114,9 @@ async function upsertUserProfile(claims: CognitoClaims) {
     name: claims.name ?? current?.name ?? "RoomXchange Member",
     avatar: current?.avatar ?? null,
     email: claims.email ?? current?.email ?? null,
+    phonePublic: current?.phonePublic ?? false,
     role: current?.role ?? "member",
+    accountStatus: current?.accountStatus ?? "active",
     isSubscribed: current?.isSubscribed ?? false,
     subscriptionStatus: current?.subscriptionStatus ?? "inactive",
     subscriptionProvider: current?.subscriptionProvider ?? null,
@@ -199,6 +203,10 @@ export async function verifyOtp(input: unknown) {
     email: parsed.email ?? claims.email
   });
 
+  if (user.accountStatus === "frozen" || user.accountStatus === "removed") {
+    throw new AppError(403, "This account is not active.");
+  }
+
   return {
     user,
     tokens: {
@@ -219,7 +227,7 @@ export async function requireUserProfile(userId: string) {
   return assertFound(await getUserProfile(userId), "User profile not found.");
 }
 
-export async function updateUserProfile(userId: string, input: ProfileUpdateInput) {
+export async function updateUserProfile(userId: string, input: unknown) {
   const parsed = profileUpdateSchema.parse(input);
   const current = assertFound(await getUserItem(userId), "User profile not found.");
   const updatedItem: UserItem = {

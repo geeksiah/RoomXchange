@@ -1,4 +1,14 @@
-import type { Listing, ListingSummary, Report, SubscriptionStatus, UserProfile } from "@roomxchange/contracts";
+import type {
+  ConversationMessage,
+  ConversationSummary,
+  Listing,
+  ListingSummary,
+  NotificationRecord,
+  ReminderPreference,
+  Report,
+  SubscriptionStatus,
+  UserProfile
+} from "@roomxchange/contracts";
 
 export type UserItem = UserProfile & {
   PK: string;
@@ -34,6 +44,94 @@ export type ReportItem = Report & {
   entity: "REPORT";
   GSI1PK: string;
   GSI1SK: string;
+};
+
+export type UserReportItem = Report & {
+  PK: string;
+  SK: string;
+  entity: "USER_REPORT";
+};
+
+export type ConversationItem = {
+  PK: string;
+  SK: string;
+  entity: "CONVERSATION";
+  conversationId: string;
+  listingId: string;
+  listingTitle: string;
+  listingPreviewImage: string;
+  buyerId: string;
+  buyerName: string;
+  buyerAvatar: string | null;
+  ownerId: string;
+  ownerName: string;
+  ownerAvatar: string | null;
+  lastMessagePreview: string;
+  lastMessageAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ConversationMessageItem = ConversationMessage & {
+  PK: string;
+  SK: string;
+  entity: "CONVERSATION_MESSAGE";
+};
+
+export type UserConversationItem = Omit<ConversationSummary, "participant"> & {
+  PK: string;
+  SK: string;
+  entity: "USER_CONVERSATION";
+  userId: string;
+  participantId: string;
+  participantName: string;
+  participantAvatar: string | null;
+  hiddenMessageIds?: string[];
+  GSI3PK: string;
+  GSI3SK: string;
+};
+
+export type NotificationSettingsItem = {
+  PK: string;
+  SK: string;
+  entity: "APP_NOTIFICATION_SETTINGS";
+  pushEnabled: boolean;
+  messageNotificationsEnabled: boolean;
+  listingMatchNotificationsEnabled: boolean;
+  updatedAt: string;
+};
+
+export type UserNotificationItem = NotificationRecord & {
+  PK: string;
+  SK: string;
+  entity: "USER_NOTIFICATION";
+  userId: string;
+  sourceKey?: string | null;
+};
+
+export type UserReminderItem = ReminderPreference & {
+  PK: string;
+  SK: string;
+  entity: "USER_REMINDER";
+  userId: string;
+};
+
+export type UserSocketItem = {
+  PK: string;
+  SK: string;
+  entity: "SOCKET_CONNECTION";
+  userId: string;
+  connectionId: string;
+  connectedAt: string;
+};
+
+export type SocketLookupItem = {
+  PK: string;
+  SK: string;
+  entity: "SOCKET_LOOKUP";
+  userId: string;
+  connectionId: string;
+  connectedAt: string;
 };
 
 export type SubscriptionItem = SubscriptionStatus & {

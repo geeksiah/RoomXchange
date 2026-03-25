@@ -1,0 +1,252 @@
+import { useState } from "react";
+import { ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { formatListingSubtypeLabel } from "@roomxchange/shared";
+import { BackIconButton } from "../../src/components/back-icon-button";
+import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
+import { PriceRangeSlider } from "../../src/components/price-range-slider";
+import { ScaleButton } from "../../src/components/scale-button";
+import { useSession } from "../../src/session-provider";
+import { useNotificationStore } from "../../src/stores/notification-store";
+
+export default function AlertsScreen() {
+  const { api } = useSession();
+  const reminders = useNotificationStore((state) => state.reminders);
+  const upsertReminder = useNotificationStore((state) => state.upsertReminder);
+  const toggleReminder = useNotificationStore((state) => state.toggleReminder);
+  const deleteReminder = useNotificationStore((state) => state.deleteReminder);
+  const [location, setLocation] = useState("");
+  const [propertyType, setPropertyType] = useState<"all" | "room" | "apartment">("all");
+  const [listingSubtypes, setListingSubtypes] = useState<("studio" | "single_room_sc" | "one_bedroom" | "two_bedroom_plus")[]>([]);
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(6000);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setLocation("");
+    setPropertyType("all");
+    setListingSubtypes([]);
+    setMinPrice(0);
+    setMaxPrice(6000);
+  };
+
+  const toggleSubtype = (value: "studio" | "single_room_sc" | "one_bedroom" | "two_bedroom_plus") => {
+    setListingSubtypes((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
+  };
+
+  return (
+    <SafeAreaView className="flex-1 bg-rx-background">
+      <DismissKeyboardView className="flex-1">
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 176 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="px-4 pb-4 pt-3">
+            <View className="flex-row items-center justify-between">
+              <BackIconButton fallbackPath="/profile" />
+              <Text className="font-jakarta-bold text-2xl text-rx-text">Saved alerts</Text>
+              <View className="w-11" />
+            </View>
+          </View>
+
+          <View className="px-4">
+            <View
+              className="rounded-[32px] bg-white px-5 pb-7 pt-4"
+              style={{
+                shadowColor: "#111111",
+                shadowOpacity: 0.08,
+                shadowRadius: 18,
+                shadowOffset: { width: 0, height: 8 },
+                elevation: 10
+              }}
+            >
+              <View className="mb-5 h-1.5 w-14 self-center rounded-full bg-rx-border" />
+              <Text className="font-jakarta-bold text-2xl text-rx-text">Create alert</Text>
+              <Text className="mt-1 font-jakarta text-sm text-rx-muted">Choose an area, price range, and home type to get notified when a match appears.</Text>
+
+              <View className="mt-6 gap-6">
+                <View>
+                  <Text className="mb-2 font-jakarta-bold text-sm text-rx-text">Location</Text>
+                  <TextInput
+                    value={location}
+                    onChangeText={setLocation}
+                    placeholder="Accra, East Legon..."
+                    placeholderTextColor="#6B7280"
+                    returnKeyType="done"
+                    className="rounded-2xl bg-rx-background px-4 py-4 font-jakarta text-base leading-6 text-rx-text"
+                  />
+                </View>
+
+                <View>
+                  <Text className="mb-3 font-jakarta-bold text-sm text-rx-text">Listing type</Text>
+                  <View className="flex-row gap-2">
+                    {[
+                      { key: "all", label: "All" },
+                      { key: "room", label: "Rooms" },
+                      { key: "apartment", label: "Apartments" }
+                    ].map((item) => {
+                      const active = propertyType === item.key;
+                      return (
+                        <ScaleButton
+                          key={item.key}
+                          onPress={() => setPropertyType(item.key as "all" | "room" | "apartment")}
+                          className={`flex-1 rounded-full px-4 py-3 ${active ? "bg-rx-text" : "border border-rx-border bg-rx-background"}`}
+                        >
+                          <Text className={`text-center font-jakarta-bold text-sm ${active ? "text-white" : "text-rx-text"}`}>{item.label}</Text>
+                        </ScaleButton>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View>
+                  <Text className="mb-3 font-jakarta-bold text-sm text-rx-text">Room type</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View className="flex-row gap-2 pr-4">
+                    {["studio", "single_room_sc", "one_bedroom", "two_bedroom_plus"].map((item) => {
+                      const active = listingSubtypes.includes(item as typeof listingSubtypes[number]);
+                      return (
+                        <ScaleButton
+                          key={item}
+                          onPress={() => toggleSubtype(item as typeof listingSubtypes[number])}
+                          className={`rounded-full px-4 py-3 ${active ? "bg-rx-text" : "border border-rx-border bg-rx-background"}`}
+                        >
+                          <Text className={`font-jakarta-bold text-sm ${active ? "text-white" : "text-rx-text"}`}>
+                            {formatListingSubtypeLabel(item)}
+                          </Text>
+                        </ScaleButton>
+                      );
+                    })}
+                    </View>
+                  </ScrollView>
+                </View>
+
+                <View className="rounded-3xl bg-rx-background p-4">
+                  <Text className="mb-3 font-jakarta-bold text-sm text-rx-text">Budget</Text>
+                  <PriceRangeSlider minValue={minPrice} maxValue={maxPrice} onChange={(nextMin, nextMax) => {
+                    setMinPrice(nextMin);
+                    setMaxPrice(nextMax);
+                  }} />
+                </View>
+              </View>
+
+              <View className="mt-6 flex-row gap-3">
+                <ScaleButton
+                  onPress={() => {
+                    setFeedback(null);
+                    resetForm();
+                  }}
+                  className="flex-1 rounded-full bg-rx-background py-4"
+                >
+                  <Text className="text-center font-jakarta-bold text-base text-rx-text">Reset</Text>
+                </ScaleButton>
+                <ScaleButton
+                  onPress={async () => {
+                    if (!location.trim()) {
+                      setFeedback("Add a location to save this alert.");
+                      return;
+                    }
+
+                    setSubmitting(true);
+                    setFeedback(null);
+                    try {
+                      const reminder = await api.upsertReminder({
+                        location,
+                        propertyType,
+                        listingSubtypes,
+                        minBudget: minPrice,
+                        maxBudget: maxPrice,
+                        enabled: true
+                      });
+                      upsertReminder(reminder);
+                      resetForm();
+                      setFeedback("Alert saved.");
+                    } catch {
+                      setFeedback("We could not save this alert right now.");
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                  className={`flex-1 rounded-full py-4 ${submitting ? "bg-rx-border" : "bg-rx-accent"}`}
+                >
+                  <Text className="text-center font-jakarta-bold text-base text-white">{submitting ? "Saving..." : "Save alert"}</Text>
+                </ScaleButton>
+              </View>
+              {feedback ? <Text className="mt-3 font-jakarta text-sm text-rx-muted">{feedback}</Text> : null}
+            </View>
+
+            <View className="mt-5 rounded-3xl bg-white p-5">
+              <Text className="font-jakarta-bold text-xl text-rx-text">Active alerts</Text>
+              {reminders.length ? (
+                <View className="mt-4 gap-3">
+                  {reminders.map((reminder) => (
+                    <View key={reminder.id} className="rounded-2xl bg-rx-background p-4">
+                      <View className="flex-row items-start justify-between">
+                        <View className="mr-4 flex-1">
+                          <Text className="font-jakarta-bold text-base text-rx-text">{reminder.location}</Text>
+                          <Text className="mt-1 font-jakarta text-sm text-rx-muted">
+                            {reminder.listingSubtypes.length
+                              ? reminder.listingSubtypes.map((item) => formatListingSubtypeLabel(item)).join(", ")
+                              : reminder.propertyType === "all"
+                                ? "All homes"
+                                : reminder.propertyType === "room"
+                                  ? "Rooms"
+                                  : "Apartments"}
+                          </Text>
+                          <Text className="mt-2 font-jakarta text-sm text-rx-text">
+                            GHS {reminder.minBudget.toLocaleString("en-GH")} - GHS {reminder.maxBudget.toLocaleString("en-GH")}
+                          </Text>
+                        </View>
+                        <Switch
+                          value={reminder.enabled}
+                          onValueChange={async (value) => {
+                            toggleReminder(reminder.id, value);
+                            try {
+                              await api.updateReminder(reminder.id, {
+                                id: reminder.id,
+                                location: reminder.location,
+                                propertyType: reminder.propertyType,
+                                listingSubtypes: reminder.listingSubtypes,
+                                minBudget: reminder.minBudget,
+                                maxBudget: reminder.maxBudget,
+                                enabled: value
+                              });
+                            } catch {
+                              toggleReminder(reminder.id, reminder.enabled);
+                              setFeedback("We could not update this alert right now.");
+                            }
+                          }}
+                          trackColor={{ false: "#EAEAEA", true: "#FFB6C4" }}
+                          thumbColor={reminder.enabled ? "#FF385C" : "#FFFFFF"}
+                        />
+                      </View>
+                      <View className="mt-4 flex-row justify-end">
+                        <ScaleButton
+                          onPress={async () => {
+                            try {
+                              await api.deleteReminder(reminder.id);
+                              deleteReminder(reminder.id);
+                            } catch {
+                              setFeedback("We could not remove this alert right now.");
+                            }
+                          }}
+                          className="rounded-full bg-white px-4 py-2"
+                        >
+                          <Text className="font-jakarta text-xs text-rx-text">Delete</Text>
+                        </ScaleButton>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text className="mt-4 font-jakarta text-sm text-rx-muted">No alerts saved yet.</Text>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+      </DismissKeyboardView>
+    </SafeAreaView>
+  );
+}

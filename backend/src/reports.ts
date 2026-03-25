@@ -3,7 +3,7 @@ import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/li
 import { reportCreateSchema, reportUpdateSchema } from "@roomxchange/contracts";
 import { db } from "./aws.js";
 import { env } from "./config.js";
-import type { ReportItem } from "./domain.js";
+import type { ReportItem, UserReportItem } from "./domain.js";
 import { AppError, assertFound } from "./errors.js";
 import { tableKeys } from "./keys.js";
 
@@ -43,7 +43,34 @@ export async function createReport(userId: string, input: unknown) {
     })
   );
 
+  await db.send(
+    new PutCommand({
+      TableName: env.TABLE_NAME,
+      Item: {
+        ...item,
+        ...tableKeys.userReport(userId, reportId),
+        entity: "USER_REPORT"
+      } satisfies UserReportItem
+    })
+  );
+
   return item;
+}
+
+export async function getMyReports(userId: string) {
+  const result = await db.send(
+    new QueryCommand({
+      TableName: env.TABLE_NAME,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+      ExpressionAttributeValues: {
+        ":pk": `USER#${userId}`,
+        ":sk": "REPORT#"
+      },
+      ScanIndexForward: false
+    })
+  );
+
+  return (result.Items ?? []) as UserReportItem[];
 }
 
 export async function getReports(status = "open") {
@@ -65,6 +92,17 @@ export async function getReports(status = "open") {
 export async function updateReport(reportId: string, adminId: string, input: unknown) {
   const parsed = reportUpdateSchema.parse(input);
   const now = new Date().toISOString();
+  const current = assertFound(
+    (
+      await db.send(
+        new GetCommand({
+          TableName: env.TABLE_NAME,
+          Key: tableKeys.report(reportId)
+        })
+      )
+    ).Item as ReportItem | undefined,
+    "Report not found."
+  );
 
   await db.send(
     new UpdateCommand({
@@ -108,7 +146,19 @@ export async function updateReport(reportId: string, adminId: string, input: unk
     })
   );
 
-  return updated.Item as ReportItem;
+  const updatedItem = updated.Item as ReportItem;
+  await db.send(
+    new PutCommand({
+      TableName: env.TABLE_NAME,
+      Item: {
+        ...updatedItem,
+        ...tableKeys.userReport(current.reporterId, reportId),
+        entity: "USER_REPORT"
+      } satisfies UserReportItem
+    })
+  );
+
+  return updatedItem;
 }
 
 export async function assertAdmin(userId: string) {
@@ -119,7 +169,7 @@ export async function assertAdmin(userId: string) {
     })
   );
 
-  if ((result.Item as { role?: string } | undefined)?.role !== "admin") {
+  if (!["moderator", "admin", "super_admin"].includes((result.Item as { role?: string } | undefined)?.role ?? "")) {
     throw new AppError(403, "Admin access is required.");
   }
 }

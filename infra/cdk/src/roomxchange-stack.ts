@@ -1,5 +1,7 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
+  Aws,
   CfnOutput,
   Duration,
   RemovalPolicy,
@@ -7,9 +9,10 @@ import {
   StackProps
 } from "aws-cdk-lib";
 import { RestApi, LambdaIntegration, Cors, CognitoUserPoolsAuthorizer, AuthorizationType } from "aws-cdk-lib/aws-apigateway";
+import { CfnApi, CfnIntegration, CfnRoute, CfnStage } from "aws-cdk-lib/aws-apigatewayv2";
 import { Rule, Schedule } from "aws-cdk-lib/aws-events";
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
-import { PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { PolicyStatement, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import { Runtime, Architecture } from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { UserPool, UserPoolClient } from "aws-cdk-lib/aws-cognito";
@@ -20,20 +23,27 @@ import { AttributeType, BillingMode, Table } from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from "constructs";
 import { OpenNextSite } from "./constructs/open-next-site.js";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 export class RoomXchangeStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const repoRoot = path.resolve(__dirname, "../../../..");
+    const repoRoot = path.resolve(__dirname, "../../..");
     const stage = process.env.ROOMXCHANGE_STAGE ?? "dev";
+    const tableName = stage === "prod" ? "RoomXchange-prod" : `RoomXchange-${stage}`;
+    const backendOnly = /^(1|true|yes)$/i.test(process.env.ROOMXCHANGE_BACKEND_ONLY ?? "");
     const domain = process.env.ROOMXCHANGE_DOMAIN?.trim();
     const configuredWebUrl = process.env.ROOMXCHANGE_WEB_URL?.trim();
     const webAppUrl = configuredWebUrl || (domain ? `https://${domain}` : "http://localhost:3000");
     const paystackSecret = process.env.ROOMXCHANGE_PAYSTACK_SECRET_KEY ?? "replace-me";
     const paystackPlanCode = process.env.ROOMXCHANGE_PAYSTACK_PLAN_CODE ?? "replace-me";
+    const adminWebEmail = process.env.ADMIN_WEB_EMAIL ?? "abbas.demo@roomxchange.dev";
+    const adminWebPhone = process.env.ADMIN_WEB_PHONE ?? "+233240000001";
+    const adminWebPassword = process.env.ADMIN_WEB_PASSWORD ?? "Admin@12345";
 
     const table = new Table(this, "RoomXchangeTable", {
-      tableName: "RoomXchange",
+      tableName,
       partitionKey: { name: "PK", type: AttributeType.STRING },
       sortKey: { name: "SK", type: AttributeType.STRING },
       billingMode: BillingMode.PAY_PER_REQUEST,
@@ -52,6 +62,12 @@ export class RoomXchangeStack extends Stack {
       sortKey: { name: "GSI2SK", type: AttributeType.STRING }
     });
 
+    table.addGlobalSecondaryIndex({
+      indexName: "GSI3",
+      partitionKey: { name: "GSI3PK", type: AttributeType.STRING },
+      sortKey: { name: "GSI3SK", type: AttributeType.STRING }
+    });
+
     const mediaBucket = new Bucket(this, "MediaBucket", {
       encryption: BucketEncryption.S3_MANAGED,
       cors: [
@@ -62,21 +78,29 @@ export class RoomXchangeStack extends Stack {
           exposedHeaders: ["ETag"]
         }
       ],
-      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      publicReadAccess: backendOnly,
+      blockPublicAccess: backendOnly ? BlockPublicAccess.BLOCK_ACLS : BlockPublicAccess.BLOCK_ALL,
       removalPolicy: RemovalPolicy.RETAIN
     });
 
-    const mediaOriginAccessIdentity = new OriginAccessIdentity(this, "MediaOAI");
-    mediaBucket.grantRead(mediaOriginAccessIdentity);
+    const mediaOriginAccessIdentity = backendOnly ? null : new OriginAccessIdentity(this, "MediaOAI");
+    if (mediaOriginAccessIdentity) {
+      mediaBucket.grantRead(mediaOriginAccessIdentity);
+    }
 
-    const mediaDistribution = new Distribution(this, "MediaDistribution", {
-      defaultBehavior: {
-        origin: new origins.S3Origin(mediaBucket, { originAccessIdentity: mediaOriginAccessIdentity }),
-        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        allowedMethods: AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-        cachePolicy: CachePolicy.CACHING_OPTIMIZED
-      }
-    });
+    const mediaDistribution = backendOnly
+      ? null
+      : new Distribution(this, "MediaDistribution", {
+          defaultBehavior: {
+            origin: new origins.S3Origin(mediaBucket, { originAccessIdentity: mediaOriginAccessIdentity! }),
+            viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            allowedMethods: AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+            cachePolicy: CachePolicy.CACHING_OPTIMIZED
+          }
+        });
+    const mediaBaseUrl = backendOnly
+      ? `https://${mediaBucket.bucketRegionalDomainName}`
+      : `https://${mediaDistribution!.distributionDomainName}`;
 
     const defineAuthChallenge = this.createNodeFunction("DefineAuthChallengeFn", {
       entry: path.join(repoRoot, "backend/src/cognito-define-auth.ts")
@@ -123,16 +147,37 @@ export class RoomXchangeStack extends Stack {
       ROOMXCHANGE_STAGE: stage,
       TABLE_NAME: table.tableName,
       MEDIA_BUCKET_NAME: mediaBucket.bucketName,
-      MEDIA_CDN_URL: `https://${mediaDistribution.distributionDomainName}`,
+      MEDIA_CDN_URL: mediaBaseUrl,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
       WEB_APP_URL: webAppUrl,
       PAYSTACK_SECRET_KEY: paystackSecret,
-      PAYSTACK_PLAN_CODE: paystackPlanCode
+      PAYSTACK_PLAN_CODE: paystackPlanCode,
+      ADMIN_WEB_EMAIL: adminWebEmail,
+      ADMIN_WEB_PHONE: adminWebPhone,
+      ADMIN_WEB_PASSWORD: adminWebPassword
     };
 
     const apiHandler = this.createNodeFunction("ApiHandlerFn", {
       entry: path.join(repoRoot, "backend/src/handlers/api.ts"),
+      environment: commonEnvironment
+    });
+
+    const websocketConnectHandler = this.createNodeFunction("WebsocketConnectHandlerFn", {
+      entry: path.join(repoRoot, "backend/src/handlers/ws.ts"),
+      handler: "connectHandler",
+      environment: commonEnvironment
+    });
+
+    const websocketDisconnectHandler = this.createNodeFunction("WebsocketDisconnectHandlerFn", {
+      entry: path.join(repoRoot, "backend/src/handlers/ws.ts"),
+      handler: "disconnectHandler",
+      environment: commonEnvironment
+    });
+
+    const websocketDefaultHandler = this.createNodeFunction("WebsocketDefaultHandlerFn", {
+      entry: path.join(repoRoot, "backend/src/handlers/ws.ts"),
+      handler: "defaultHandler",
       environment: commonEnvironment
     });
 
@@ -147,6 +192,13 @@ export class RoomXchangeStack extends Stack {
           "cognito-idp:AdminUpdateUserAttributes"
         ],
         resources: [userPool.userPoolArn]
+      })
+    );
+
+    websocketConnectHandler.addToRolePolicy(
+      new PolicyStatement({
+        actions: ["cognito-idp:GetUser"],
+        resources: ["*"]
       })
     );
 
@@ -169,6 +221,8 @@ export class RoomXchangeStack extends Stack {
     });
 
     table.grantReadWriteData(apiHandler);
+    table.grantReadWriteData(websocketConnectHandler);
+    table.grantReadWriteData(websocketDisconnectHandler);
     table.grantReadWriteData(subscriptionReconciliation);
     table.grantReadWriteData(staleUploadCleanup);
     mediaBucket.grantReadWrite(apiHandler);
@@ -201,34 +255,73 @@ export class RoomXchangeStack extends Stack {
     const auth = api.root.addResource("auth");
     auth.addResource("request-otp").addMethod("POST", integration);
     auth.addResource("verify-otp").addMethod("POST", integration);
-    const me = auth.addResource("me");
-    me.addMethod("GET", integration, authMethodOptions);
-    me.addMethod("PATCH", integration, authMethodOptions);
-
-    const uploads = api.root.addResource("uploads");
-    uploads.addResource("presign").addMethod("POST", integration, authMethodOptions);
+    api.root.addResource("app").addResource("notification-settings").addMethod("GET", integration);
 
     const listings = api.root.addResource("listings");
-    listings.addResource("create").addMethod("POST", integration, authMethodOptions);
     listings.addResource("feed").addMethod("GET", integration);
     const listingById = listings.addResource("{id}");
     listingById.addMethod("GET", integration);
-    listingById.addMethod("PATCH", integration, authMethodOptions);
-    listingById.addMethod("DELETE", integration, authMethodOptions);
     listings.addResource("user").addResource("{userId}").addMethod("GET", integration);
 
     const subscription = api.root.addResource("subscription");
-    subscription.addResource("status").addMethod("GET", integration, authMethodOptions);
-    subscription.addResource("checkout-link").addMethod("POST", integration, authMethodOptions);
     subscription.addResource("verify").addMethod("POST", integration);
 
-    const reports = api.root.addResource("reports");
-    reports.addResource("create").addMethod("POST", integration, authMethodOptions);
-
     const admin = api.root.addResource("admin");
-    const adminReports = admin.addResource("reports");
-    adminReports.addMethod("GET", integration, authMethodOptions);
-    adminReports.addResource("{id}").addMethod("PATCH", integration, authMethodOptions);
+    admin.addResource("auth").addResource("login").addMethod("POST", integration);
+
+    const authenticatedProxy = api.root.addResource("{proxy+}");
+    authenticatedProxy.addMethod("ANY", integration, authMethodOptions);
+
+    const websocketApi = new CfnApi(this, "RoomXchangeWebsocketApi", {
+      name: "RoomXchangeRealtime",
+      protocolType: "WEBSOCKET",
+      routeSelectionExpression: "$request.body.action"
+    });
+
+    const websocketConnectIntegration = this.createWebsocketIntegration("WebsocketConnectIntegration", websocketApi.ref, websocketConnectHandler);
+    const websocketDisconnectIntegration = this.createWebsocketIntegration("WebsocketDisconnectIntegration", websocketApi.ref, websocketDisconnectHandler);
+    const websocketDefaultIntegration = this.createWebsocketIntegration("WebsocketDefaultIntegration", websocketApi.ref, websocketDefaultHandler);
+
+    new CfnRoute(this, "WebsocketConnectRoute", {
+      apiId: websocketApi.ref,
+      routeKey: "$connect",
+      authorizationType: "NONE",
+      target: `integrations/${websocketConnectIntegration.ref}`
+    });
+
+    new CfnRoute(this, "WebsocketDisconnectRoute", {
+      apiId: websocketApi.ref,
+      routeKey: "$disconnect",
+      authorizationType: "NONE",
+      target: `integrations/${websocketDisconnectIntegration.ref}`
+    });
+
+    new CfnRoute(this, "WebsocketDefaultRoute", {
+      apiId: websocketApi.ref,
+      routeKey: "$default",
+      authorizationType: "NONE",
+      target: `integrations/${websocketDefaultIntegration.ref}`
+    });
+
+    new CfnStage(this, "WebsocketStage", {
+      apiId: websocketApi.ref,
+      stageName: stage,
+      autoDeploy: true
+    });
+
+    const websocketManagementEndpoint = `https://${websocketApi.ref}.execute-api.${this.region}.${Aws.URL_SUFFIX}/${stage}`;
+    const websocketPublicUrl = `wss://${websocketApi.ref}.execute-api.${this.region}.${Aws.URL_SUFFIX}/${stage}`;
+    apiHandler.addEnvironment("WEBSOCKET_API_ENDPOINT", websocketManagementEndpoint);
+    apiHandler.addToRolePolicy(
+      new PolicyStatement({
+        actions: ["execute-api:ManageConnections"],
+        resources: [`arn:aws:execute-api:${this.region}:${this.account}:${websocketApi.ref}/*`]
+      })
+    );
+
+    this.grantWebsocketInvoke(websocketApi.ref, websocketConnectHandler, "$connect");
+    this.grantWebsocketInvoke(websocketApi.ref, websocketDisconnectHandler, "$disconnect");
+    this.grantWebsocketInvoke(websocketApi.ref, websocketDefaultHandler, "$default");
 
     new Rule(this, "SubscriptionReconciliationSchedule", {
       schedule: Schedule.rate(Duration.hours(6)),
@@ -245,22 +338,29 @@ export class RoomXchangeStack extends Stack {
       targets: [new LambdaFunction(operationalAudit)]
     });
 
-    const webSite = new OpenNextSite(this, "WebSite", {
-      buildPath: path.join(repoRoot, "apps/web/.open-next"),
-      environment: {
-        NEXT_PUBLIC_ROOMXCHANGE_API_URL: api.url,
-        NEXT_PUBLIC_ROOMXCHANGE_WEB_URL: webAppUrl,
-        NEXT_PUBLIC_ROOMXCHANGE_MEDIA_URL: `https://${mediaDistribution.distributionDomainName}`
-      }
-    });
+    const webSite = backendOnly
+      ? null
+      : new OpenNextSite(this, "WebSite", {
+          buildPath: path.join(repoRoot, "apps/web/.open-next"),
+          environment: {
+            NEXT_PUBLIC_ROOMXCHANGE_API_URL: api.url,
+            NEXT_PUBLIC_ROOMXCHANGE_WEB_URL: webAppUrl,
+            NEXT_PUBLIC_ROOMXCHANGE_MEDIA_URL: mediaBaseUrl,
+            NEXT_PUBLIC_ROOMXCHANGE_SOCKET_URL: websocketPublicUrl
+          }
+        });
 
     new CfnOutput(this, "ApiUrl", { value: api.url });
     new CfnOutput(this, "TableName", { value: table.tableName });
     new CfnOutput(this, "MediaBucketName", { value: mediaBucket.bucketName });
     new CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
     new CfnOutput(this, "UserPoolClientId", { value: userPoolClient.userPoolClientId });
-    new CfnOutput(this, "MediaUrl", { value: `https://${mediaDistribution.distributionDomainName}` });
-    new CfnOutput(this, "WebUrl", { value: `https://${webSite.distribution.distributionDomainName}` });
+    new CfnOutput(this, "BackendOnlyMode", { value: backendOnly ? "true" : "false" });
+    new CfnOutput(this, "MediaUrl", { value: mediaBaseUrl });
+    new CfnOutput(this, "WebUrl", {
+      value: webSite ? `https://${webSite.distribution.distributionDomainName}` : "BACKEND_ONLY_DEPLOYMENT"
+    });
+    new CfnOutput(this, "SocketUrl", { value: websocketPublicUrl });
   }
 
   private createNodeFunction(
@@ -283,6 +383,22 @@ export class RoomXchangeStack extends Stack {
       timeout: Duration.seconds(30),
       memorySize: 1024,
       environment
+    });
+  }
+
+  private createWebsocketIntegration(id: string, apiId: string, handler: NodejsFunction) {
+    return new CfnIntegration(this, id, {
+      apiId,
+      integrationMethod: "POST",
+      integrationType: "AWS_PROXY",
+      integrationUri: `arn:aws:apigateway:${this.region}:lambda:path/2015-03-31/functions/${handler.functionArn}/invocations`
+    });
+  }
+
+  private grantWebsocketInvoke(apiId: string, handler: NodejsFunction, routeKey: string) {
+    handler.addPermission(`${handler.node.id}${routeKey.replace(/\W/g, "")}InvokePermission`, {
+      principal: new ServicePrincipal("apigateway.amazonaws.com"),
+      sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${apiId}/*/${routeKey}`
     });
   }
 }

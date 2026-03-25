@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { amenitySchema, listingInputSchema, type ListingInput } from "@roomxchange/contracts";
-import { amenityLabels, buildMapboxSearchUrl, buildStaticMapUrl } from "@roomxchange/shared";
+import { listingInputSchema, suggestedAmenities, type ListingInput } from "@roomxchange/contracts";
+import { amenityLabels, buildMapboxSearchUrl, buildStaticMapUrl, formatListingSubtypeLabel } from "@roomxchange/shared";
 import { useSession } from "./session-provider";
 
 type Suggestion = {
@@ -15,7 +15,12 @@ type Suggestion = {
   lng: number;
 };
 
-const amenityOptions = amenitySchema.options;
+const propertyTypeOptions = [
+  { value: "room", label: "Room" },
+  { value: "apartment", label: "Apartment" }
+] as const;
+
+const listingSubtypeOptions = ["studio", "single_room_sc", "one_bedroom", "two_bedroom_plus"] as const;
 
 export function ListingForm({
   defaultValues,
@@ -33,6 +38,8 @@ export function ListingForm({
     resolver: zodResolver(listingInputSchema),
     defaultValues: {
       title: defaultValues?.title ?? "",
+      propertyType: defaultValues?.propertyType ?? "room",
+      listingSubtype: defaultValues?.listingSubtype ?? "single_room_sc",
       price: defaultValues?.price ?? 0,
       location: defaultValues?.location ?? "",
       lat: defaultValues?.lat ?? 0,
@@ -119,6 +126,26 @@ export function ListingForm({
           <input placeholder="Forest-edge A-frame with deck" {...form.register("title")} />
         </label>
         <label className="field">
+          <span>Listing type</span>
+          <select {...form.register("propertyType")}>
+            {propertyTypeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Room type</span>
+          <select {...form.register("listingSubtype")}>
+            {listingSubtypeOptions.map((subtype) => (
+              <option key={subtype} value={subtype}>
+                {formatListingSubtypeLabel(subtype)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
           <span>Nightly price</span>
           <input type="number" min={0} step={1} {...form.register("price", { valueAsNumber: true })} />
         </label>
@@ -174,7 +201,7 @@ export function ListingForm({
         <div className="field full">
           <span>Amenities</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {amenityOptions.map((amenity) => {
+            {suggestedAmenities.map((amenity) => {
               const selected = form.watch("amenities").includes(amenity);
               return (
                 <button

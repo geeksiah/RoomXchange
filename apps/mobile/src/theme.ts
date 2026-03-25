@@ -1,17 +1,16 @@
 import { designTokens } from "@roomxchange/shared";
 
 export const theme = {
-  colors: {
-    background: designTokens.colors.background,
-    surface: designTokens.colors.surface,
-    surfaceMuted: designTokens.colors.surfaceMuted,
-    text: designTokens.colors.text,
-    textMuted: designTokens.colors.textMuted,
-    accent: designTokens.colors.accent,
-    accentSoft: designTokens.colors.accentSoft,
-    border: designTokens.colors.border,
-    danger: designTokens.colors.danger
-  },
+  colors: designTokens.colors,
   spacing: designTokens.spacing,
-  radius: designTokens.radius
+  radius: designTokens.radius,
+  shadow: {
+    card: {
+      shadowColor: "#111111",
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 4
+    }
+  }
 } as const;

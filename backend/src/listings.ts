@@ -15,6 +15,7 @@ import { decodeCursor, encodeCursor } from "./cursor.js";
 import type { ListingFeedItem, ListingItem, ListingLookupItem, UserItem } from "./domain.js";
 import { AppError, assert, assertFound } from "./errors.js";
 import { tableKeys } from "./keys.js";
+import { evaluateListingMatches } from "./notifications.js";
 import { markUploadsComplete } from "./uploads.js";
 
 async function getOwner(ownerId: string) {
@@ -33,6 +34,8 @@ function toListingSummary(item: ListingItem | ListingLookupItem): ListingSummary
     listingId: item.listingId,
     ownerId: item.ownerId,
     title: item.title,
+    propertyType: item.propertyType ?? "apartment",
+    listingSubtype: item.listingSubtype ?? null,
     price: item.price,
     location: item.location,
     lat: item.lat,
@@ -49,8 +52,9 @@ async function getOwnerContact(viewerId: string | null, ownerId: string) {
   if (!viewerId) {
     return {
       name: owner.name,
+      avatar: owner.avatar ?? null,
       phoneMasked: maskPhone(owner.phone),
-      phone: null,
+      phone: owner.phonePublic ? owner.phone : null,
       canContact: false
     };
   }
@@ -58,6 +62,7 @@ async function getOwnerContact(viewerId: string | null, ownerId: string) {
   if (viewerId === ownerId) {
     return {
       name: owner.name,
+      avatar: owner.avatar ?? null,
       phoneMasked: maskPhone(owner.phone),
       phone: owner.phone,
       canContact: true
@@ -68,14 +73,31 @@ async function getOwnerContact(viewerId: string | null, ownerId: string) {
   const subscribed = viewer?.isSubscribed && viewer.subscriptionStatus === "active";
   return {
     name: owner.name,
+    avatar: owner.avatar ?? null,
     phoneMasked: maskPhone(owner.phone),
-    phone: subscribed ? owner.phone : null,
+    phone: owner.phonePublic ? owner.phone : null,
     canContact: Boolean(subscribed)
   };
 }
 
 function applyFeedFilters(item: ListingFeedItem, query: FeedQueryInput) {
+  if (query.query) {
+    const search = query.query.toLowerCase();
+    const matches = item.title.toLowerCase().includes(search) || item.location.toLowerCase().includes(search);
+    if (!matches) {
+      return false;
+    }
+  }
+
   if (query.location && !item.location.toLowerCase().includes(query.location.toLowerCase())) {
+    return false;
+  }
+
+  if (query.propertyType && (item.propertyType ?? "apartment") !== query.propertyType) {
+    return false;
+  }
+
+  if (query.listingSubtypes.length && (!item.listingSubtype || !query.listingSubtypes.includes(item.listingSubtype))) {
     return false;
   }
 
@@ -114,6 +136,8 @@ export async function createListing(userId: string, input: unknown) {
     listingId,
     ownerId: userId,
     title: parsed.title,
+    propertyType: parsed.propertyType,
+    listingSubtype: parsed.listingSubtype ?? null,
     price: parsed.price,
     location: parsed.location,
     lat: parsed.lat,
@@ -179,13 +203,17 @@ export async function createListing(userId: string, input: unknown) {
   );
 
   await markUploadsComplete(userId, parsed.images);
+  if (item.status === "published") {
+    await evaluateListingMatches(toListingSummary(item));
+  }
 
   return {
     ...item,
     ownerContact: {
       name: owner.name,
+      avatar: owner.avatar ?? null,
       phoneMasked: maskPhone(owner.phone),
-      phone: owner.phone,
+      phone: owner.phonePublic ? owner.phone : null,
       canContact: true
     }
   } satisfies Listing;
@@ -289,6 +317,8 @@ export async function updateListing(userId: string, listingId: string, input: un
   const updated: ListingItem = {
     ...current,
     ...parsed,
+    propertyType: parsed.propertyType ?? current.propertyType ?? "apartment",
+    listingSubtype: parsed.listingSubtype === undefined ? current.listingSubtype ?? null : parsed.listingSubtype ?? null,
     vrUrl: parsed.vrUrl === undefined ? current.vrUrl : parsed.vrUrl ?? null,
     mapboxPlaceId: parsed.mapboxPlaceId === undefined ? current.mapboxPlaceId : parsed.mapboxPlaceId ?? null,
     updatedAt: new Date().toISOString()
@@ -339,6 +369,9 @@ export async function updateListing(userId: string, listingId: string, input: un
   );
 
   await markUploadsComplete(userId, updated.images);
+  if (updated.status === "published") {
+    await evaluateListingMatches(toListingSummary(updated));
+  }
   return getListingById(listingId, userId);
 }
 

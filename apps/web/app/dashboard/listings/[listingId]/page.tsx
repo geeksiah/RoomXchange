@@ -30,9 +30,16 @@ export default function EditListingPage() {
         </p>
       </div>
       <ListingForm
-        defaultValues={listingQuery.data}
+        defaultValues={{
+          ...listingQuery.data,
+          listingSubtype: listingQuery.data.listingSubtype ?? undefined,
+          vrUrl: listingQuery.data.vrUrl ?? undefined,
+          mapboxPlaceId: listingQuery.data.mapboxPlaceId ?? undefined
+        }}
         submitLabel={updateMutation.isPending ? "Saving..." : "Save changes"}
-        onSubmit={updateMutation.mutateAsync}
+        onSubmit={async (values) => {
+          await updateMutation.mutateAsync(values);
+        }}
       />
     </section>
   );

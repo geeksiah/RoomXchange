@@ -89,6 +89,10 @@ For client apps, also expose:
 
 ## AWS deployment
 
+Detailed beginner guide:
+
+- [AWS Deployment Guide](c:/Users/abbas/Documents/RoomXchange/docs/AWS_DEPLOYMENT_GUIDE.md)
+
 You can deploy before your custom domain is ready. The stack will still return working AWS URLs, and you can connect a real domain later.
 
 1. Build the Next.js OpenNext bundle.

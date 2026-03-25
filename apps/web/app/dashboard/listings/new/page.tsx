@@ -23,7 +23,12 @@ export default function NewListingPage() {
           S3 uploads, Mapbox-powered location lookup, and optional VR links are all live here.
         </p>
       </div>
-      <ListingForm submitLabel={createMutation.isPending ? "Publishing..." : "Publish listing"} onSubmit={createMutation.mutateAsync} />
+      <ListingForm
+        submitLabel={createMutation.isPending ? "Publishing..." : "Publish listing"}
+        onSubmit={async (values) => {
+          await createMutation.mutateAsync(values);
+        }}
+      />
     </section>
   );
 }

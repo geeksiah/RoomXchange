@@ -8,10 +8,22 @@ export const tableKeys = {
   }),
   subscription: (userId: string) => ({ PK: `USER#${userId}`, SK: "SUBSCRIPTION#CURRENT" }),
   report: (reportId: string) => ({ PK: `REPORT#${reportId}`, SK: "META" }),
+  userReport: (userId: string, reportId: string) => ({ PK: `USER#${userId}`, SK: `REPORT#${reportId}` }),
+  userNotification: (userId: string, notificationId: string) => ({ PK: `USER#${userId}`, SK: `NOTIFICATION#${notificationId}` }),
+  userReminder: (userId: string, reminderId: string) => ({ PK: `USER#${userId}`, SK: `REMINDER#${reminderId}` }),
+  conversation: (conversationId: string) => ({ PK: `CONVERSATION#${conversationId}`, SK: "META" }),
+  conversationMessage: (conversationId: string, createdAt: string, messageId: string) => ({
+    PK: `CONVERSATION#${conversationId}`,
+    SK: `MESSAGE#${createdAt}#${messageId}`
+  }),
+  userConversation: (userId: string, conversationId: string) => ({ PK: `USER#${userId}`, SK: `CONVERSATION#${conversationId}` }),
+  userSocket: (userId: string, connectionId: string) => ({ PK: `USER#${userId}`, SK: `SOCKET#${connectionId}` }),
+  socketLookup: (connectionId: string) => ({ PK: `SOCKET#${connectionId}`, SK: "META" }),
   paymentCurrent: (reference: string) => ({ PK: `PAYMENT#${reference}`, SK: "LATEST" }),
   paymentEvent: (reference: string, timestamp: string) => ({ PK: `PAYMENT#${reference}`, SK: `EVENT#${timestamp}` }),
   upload: (userId: string, uploadId: string) => ({ PK: `USER#${userId}`, SK: `UPLOAD#${uploadId}` }),
-  adminEvent: (adminId: string, timestamp: string) => ({ PK: `ADMIN#${adminId}`, SK: `EVENT#${timestamp}` })
+  adminEvent: (adminId: string, timestamp: string) => ({ PK: `ADMIN#${adminId}`, SK: `EVENT#${timestamp}` }),
+  appSetting: (name: string) => ({ PK: "APP_SETTINGS", SK: name })
 } as const;
 
 export function subscriptionOperationalIndex(status: string, expiresAt: string | null, userId: string) {
@@ -32,5 +44,12 @@ export function uploadOperationalIndex(status: string, expiresAt: string, upload
   return {
     GSI2PK: `UPLOAD_STATUS#${status.toUpperCase()}`,
     GSI2SK: `EXPIRES_AT#${expiresAt}#UPLOAD#${uploadId}`
+  };
+}
+
+export function conversationInboxIndex(userId: string, updatedAt: string, conversationId: string) {
+  return {
+    GSI3PK: `USER_CONVERSATION#${userId}`,
+    GSI3SK: `UPDATED_AT#${updatedAt}#CONVERSATION#${conversationId}`
   };
 }

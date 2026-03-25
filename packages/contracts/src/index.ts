@@ -3,12 +3,27 @@ import { z } from "zod";
 export const subscriptionStatuses = ["inactive", "active", "past_due", "expired", "cancelled"] as const;
 export const listingStatuses = ["draft", "published", "archived"] as const;
 export const reportStatuses = ["open", "reviewing", "resolved", "dismissed"] as const;
-export const userRoles = ["member", "admin"] as const;
+export const userRoles = ["member", "moderator", "admin", "super_admin"] as const;
+export const accountStatuses = ["active", "frozen", "removed"] as const;
+export const propertyTypes = ["room", "apartment"] as const;
+export const listingSubtypes = ["studio", "single_room_sc", "one_bedroom", "two_bedroom_plus"] as const;
+export const suggestedAmenities = [
+  "Fast Wi-Fi",
+  "Parking",
+  "Kitchen",
+  "Laundry",
+  "Pool",
+  "Workspace",
+  "Heating",
+  "A/C",
+  "Pet friendly",
+  "3D tour"
+] as const;
 
 export const phoneSchema = z
   .string()
   .trim()
-  .regex(/^\+[1-9]\d{7,14}$/, "Phone number must be in E.164 format.");
+  .regex(/^(\+[1-9]\d{7,14}|233\d{9}|0\d{9})$/, "Enter a valid phone number.");
 
 export const emailSchema = z.string().trim().email();
 
@@ -35,12 +50,19 @@ const optionalStringSchema = z.preprocess((value) => {
 
 const optionalNameSchema = optionalStringSchema.pipe(z.string().trim().min(2).max(80).optional());
 
+const storedPropertyTypeSchema = z.preprocess((value) => value ?? "apartment", z.enum(propertyTypes));
 export const cursorSchema = z.string().trim().min(1);
+export const conversationIdSchema = z.string().trim().min(16).max(128);
 
 export const otpRequestSchema = z.object({
   phone: phoneSchema,
   name: optionalNameSchema,
   email: optionalEmailSchema
+});
+
+export const adminLoginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(8).max(128)
 });
 
 export const otpVerifySchema = z.object({
@@ -51,26 +73,17 @@ export const otpVerifySchema = z.object({
   email: optionalEmailSchema
 });
 
-export const amenitySchema = z.enum([
-  "wifi",
-  "parking",
-  "kitchen",
-  "laundry",
-  "pool",
-  "workspace",
-  "heating",
-  "air_conditioning",
-  "pet_friendly",
-  "vr_ready"
-]);
+export const amenitySchema = z.string().trim().min(2).max(32);
 
 export const listingInputSchema = z.object({
   title: z.string().trim().min(8).max(120),
+  propertyType: z.enum(propertyTypes).default("room"),
+  listingSubtype: z.enum(listingSubtypes).optional(),
   price: z.number().positive().max(1_000_000),
   location: z.string().trim().min(3).max(160),
   lat: z.number().gte(-90).lte(90),
   lng: z.number().gte(-180).lte(180),
-  images: z.array(z.string().url()).min(1).max(12),
+  images: z.array(z.string().url()).min(1).max(10),
   previewImage: z.string().url(),
   vrUrl: optionalUrlSchema,
   description: z.string().trim().min(40).max(3000),
@@ -79,17 +92,39 @@ export const listingInputSchema = z.object({
   status: z.enum(listingStatuses).default("published")
 });
 
-export const listingUpdateSchema = listingInputSchema.partial().refine(
-  (value) => Object.keys(value).length > 0,
-  "At least one field must be provided."
-);
+export const listingUpdateSchema = listingInputSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, "At least one field must be provided.");
 
 export const feedQuerySchema = z.object({
   cursor: cursorSchema.optional(),
   limit: z.coerce.number().int().min(1).max(24).default(12),
+  query: z.string().trim().min(1).max(120).optional(),
   location: z.string().trim().min(2).max(120).optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
+  propertyType: z.enum(propertyTypes).optional(),
+  listingSubtypes: z
+    .union([z.enum(listingSubtypes), z.array(z.enum(listingSubtypes)), z.string()])
+    .optional()
+    .transform((value) => {
+      if (!value) {
+        return [];
+      }
+
+      if (Array.isArray(value)) {
+        return value;
+      }
+
+      if (typeof value === "string" && value.includes(",")) {
+        return value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean) as (typeof listingSubtypes)[number][];
+      }
+
+      return [value as (typeof listingSubtypes)[number]];
+    }),
   hasVr: z
     .union([z.boolean(), z.string().transform((value) => value === "true")])
     .optional(),
@@ -109,10 +144,10 @@ export const feedQuerySchema = z.object({
         return value
           .split(",")
           .map((item) => item.trim())
-          .filter(Boolean) as Array<z.infer<typeof amenitySchema>>;
+          .filter(Boolean);
       }
 
-      return [value as z.infer<typeof amenitySchema>];
+      return [value];
     })
 });
 
@@ -135,7 +170,25 @@ export const reportUpdateSchema = z.object({
 export const profileUpdateSchema = z.object({
   name: optionalNameSchema,
   avatar: optionalUrlSchema,
-  email: optionalEmailSchema
+  email: optionalEmailSchema,
+  phonePublic: z.boolean().optional()
+});
+
+export const adminUserUpdateSchema = z.object({
+  name: optionalNameSchema,
+  avatar: optionalUrlSchema,
+  email: optionalEmailSchema,
+  phonePublic: z.boolean().optional(),
+  role: z.enum(userRoles).optional(),
+  accountStatus: z.enum(accountStatuses).optional()
+});
+
+export const adminSubscriptionUpdateSchema = z.object({
+  isSubscribed: z.boolean().optional(),
+  subscriptionStatus: z.enum(subscriptionStatuses).optional(),
+  subscriptionExpiresAt: z.string().nullable().optional(),
+  subscriptionPlan: z.string().nullable().optional(),
+  subscriptionProvider: z.string().nullable().optional()
 });
 
 export const subscriptionCheckoutSchema = z.object({
@@ -150,6 +203,7 @@ export const subscriptionVerifySchema = z.object({
 
 export const ownerContactSchema = z.object({
   name: z.string(),
+  avatar: z.string().url().nullable(),
   phoneMasked: z.string(),
   phone: z.string().nullable(),
   canContact: z.boolean()
@@ -159,6 +213,8 @@ export const listingSchema = z.object({
   listingId: z.string().uuid(),
   ownerId: z.string().uuid(),
   title: z.string(),
+  propertyType: storedPropertyTypeSchema,
+  listingSubtype: z.enum(listingSubtypes).nullable(),
   price: z.number(),
   location: z.string(),
   lat: z.number(),
@@ -175,18 +231,20 @@ export const listingSchema = z.object({
   ownerContact: ownerContactSchema
 });
 
-export const listingSummarySchema = listingSchema.pick({
-  listingId: true,
-  ownerId: true,
-  title: true,
-  price: true,
-  location: true,
-  lat: true,
-  lng: true,
-  previewImage: true,
-  vrUrl: true,
-  amenities: true,
-  createdAt: true
+export const listingSummarySchema = z.object({
+  listingId: z.string().uuid(),
+  ownerId: z.string().uuid(),
+  title: z.string(),
+  propertyType: storedPropertyTypeSchema,
+  listingSubtype: z.enum(listingSubtypes).nullable(),
+  price: z.number(),
+  location: z.string(),
+  lat: z.number(),
+  lng: z.number(),
+  previewImage: z.string().url(),
+  vrUrl: z.string().url().nullable(),
+  amenities: z.array(amenitySchema),
+  createdAt: z.string()
 });
 
 export const userProfileSchema = z.object({
@@ -195,7 +253,9 @@ export const userProfileSchema = z.object({
   name: z.string(),
   avatar: z.string().url().nullable(),
   email: emailSchema.nullable(),
+  phonePublic: z.boolean(),
   role: z.enum(userRoles),
+  accountStatus: z.enum(accountStatuses),
   isSubscribed: z.boolean(),
   subscriptionStatus: z.enum(subscriptionStatuses),
   subscriptionProvider: z.string().nullable(),
@@ -217,6 +277,16 @@ export const authTokensSchema = z.object({
 export const authSessionSchema = z.object({
   user: userProfileSchema,
   tokens: authTokensSchema
+});
+
+export const devBootstrapInputSchema = z.object({
+  signIn: z.boolean().default(false)
+});
+
+export const devBootstrapResponseSchema = z.object({
+  session: authSessionSchema.nullable(),
+  listingsCount: z.number().int().nonnegative(),
+  testUserPhone: phoneSchema
 });
 
 export const feedResponseSchema = z.object({
@@ -257,7 +327,157 @@ export const reportSchema = z.object({
   updatedAt: z.string()
 });
 
+export const conversationParticipantSchema = z.object({
+  userId: z.string().uuid(),
+  name: z.string(),
+  avatar: z.string().url().nullable()
+});
+
+export const conversationSummarySchema = z.object({
+  conversationId: conversationIdSchema,
+  listingId: z.string().uuid(),
+  listingTitle: z.string(),
+  listingPreviewImage: z.string().url(),
+  participant: conversationParticipantSchema,
+  lastMessagePreview: z.string(),
+  lastMessageAt: z.string(),
+  unreadCount: z.number().int().nonnegative(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export const openConversationInputSchema = z.object({
+  listingId: z.string().uuid()
+});
+
+export const conversationListResponseSchema = z.object({
+  items: z.array(conversationSummarySchema)
+});
+
+export const conversationMutationResultSchema = z.object({
+  success: z.literal(true)
+});
+
+export const adminAnalyticsSchema = z.object({
+  totalUsers: z.number().int().nonnegative(),
+  activeUsers: z.number().int().nonnegative(),
+  frozenUsers: z.number().int().nonnegative(),
+  removedUsers: z.number().int().nonnegative(),
+  totalListings: z.number().int().nonnegative(),
+  publishedListings: z.number().int().nonnegative(),
+  archivedListings: z.number().int().nonnegative(),
+  openReports: z.number().int().nonnegative(),
+  reviewingReports: z.number().int().nonnegative(),
+  resolvedReports: z.number().int().nonnegative(),
+  totalAdmins: z.number().int().nonnegative()
+});
+
+export const adminConversationSchema = z.object({
+  conversationId: conversationIdSchema,
+  listingId: z.string().uuid(),
+  listingTitle: z.string(),
+  listingPreviewImage: z.string().url(),
+  buyer: conversationParticipantSchema,
+  owner: conversationParticipantSchema,
+  lastMessagePreview: z.string(),
+  lastMessageAt: z.string(),
+  messageCount: z.number().int().nonnegative(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export const notificationSettingsSchema = z.object({
+  pushEnabled: z.boolean(),
+  messageNotificationsEnabled: z.boolean(),
+  listingMatchNotificationsEnabled: z.boolean(),
+  updatedAt: z.string()
+});
+
+export const notificationKinds = ["message", "listing_match", "system"] as const;
+
+export const notificationRecordSchema = z.object({
+  id: z.string().trim().min(1).max(128),
+  title: z.string().trim().min(1).max(160),
+  body: z.string().trim().min(1).max(500),
+  createdAt: z.string(),
+  listingId: z.string().uuid().optional(),
+  read: z.boolean(),
+  kind: z.enum(notificationKinds)
+});
+
+export const reminderPreferenceSchema = z.object({
+  id: z.string().trim().min(1).max(128),
+  location: z.string().trim().min(2).max(120),
+  propertyType: z.enum(["all", ...propertyTypes]),
+  listingSubtypes: z.array(z.enum(listingSubtypes)).max(4),
+  minBudget: z.number().min(0),
+  maxBudget: z.number().min(0),
+  enabled: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export const reminderUpsertInputSchema = reminderPreferenceSchema
+  .omit({ createdAt: true, updatedAt: true })
+  .partial({ id: true });
+
+export const notificationUpdateSchema = z.object({
+  read: z.boolean()
+});
+
+export const notificationsListResponseSchema = z.object({
+  items: z.array(notificationRecordSchema)
+});
+
+export const remindersListResponseSchema = z.object({
+  items: z.array(reminderPreferenceSchema)
+});
+
+export const conversationMessageSchema = z.object({
+  messageId: z.string().uuid(),
+  conversationId: conversationIdSchema,
+  listingId: z.string().uuid(),
+  senderId: z.string().uuid(),
+  body: z.string(),
+  createdAt: z.string()
+});
+
+export const conversationMessageListQuerySchema = z.object({
+  cursor: cursorSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(60).default(30)
+});
+
+export const conversationMessageListResponseSchema = z.object({
+  items: z.array(conversationMessageSchema),
+  nextCursor: z.string().nullable()
+});
+
+export const sendConversationMessageInputSchema = z.object({
+  body: z.string().trim().min(1).max(2000)
+});
+
+export const deleteConversationMessagesInputSchema = z.object({
+  messageIds: z.array(z.string().uuid()).min(1).max(50)
+});
+
+export const realtimeEventSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("message.sent"),
+    conversation: conversationSummarySchema,
+    message: conversationMessageSchema
+  }),
+  z.object({
+    type: z.literal("notification.created"),
+    notification: notificationRecordSchema
+  }),
+  z.object({
+    type: z.literal("conversation.read"),
+    conversationId: conversationIdSchema
+  })
+]);
+
 export type OtpRequestInput = z.infer<typeof otpRequestSchema>;
+export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
 export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
 export type ListingInput = z.infer<typeof listingInputSchema>;
 export type ListingUpdateInput = z.infer<typeof listingUpdateSchema>;
@@ -266,6 +486,8 @@ export type UploadPresignInput = z.infer<typeof uploadPresignSchema>;
 export type ReportCreateInput = z.infer<typeof reportCreateSchema>;
 export type ReportUpdateInput = z.infer<typeof reportUpdateSchema>;
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
+export type AdminUserUpdateInput = z.infer<typeof adminUserUpdateSchema>;
+export type AdminSubscriptionUpdateInput = z.infer<typeof adminSubscriptionUpdateSchema>;
 export type SubscriptionCheckoutInput = z.infer<typeof subscriptionCheckoutSchema>;
 export type SubscriptionVerifyInput = z.infer<typeof subscriptionVerifySchema>;
 export type OwnerContact = z.infer<typeof ownerContactSchema>;
@@ -273,8 +495,30 @@ export type Listing = z.infer<typeof listingSchema>;
 export type ListingSummary = z.infer<typeof listingSummarySchema>;
 export type FeedResponse = z.infer<typeof feedResponseSchema>;
 export type UserProfile = z.infer<typeof userProfileSchema>;
+export type AdminAnalytics = z.infer<typeof adminAnalyticsSchema>;
+export type AdminConversation = z.infer<typeof adminConversationSchema>;
 export type AuthSession = z.infer<typeof authSessionSchema>;
+export type DevBootstrapInput = z.infer<typeof devBootstrapInputSchema>;
+export type DevBootstrapResponse = z.infer<typeof devBootstrapResponseSchema>;
 export type UploadPresignResponse = z.infer<typeof uploadPresignResponseSchema>;
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 export type CheckoutLinkResponse = z.infer<typeof checkoutLinkResponseSchema>;
 export type Report = z.infer<typeof reportSchema>;
+export type ConversationParticipant = z.infer<typeof conversationParticipantSchema>;
+export type ConversationSummary = z.infer<typeof conversationSummarySchema>;
+export type OpenConversationInput = z.infer<typeof openConversationInputSchema>;
+export type ConversationListResponse = z.infer<typeof conversationListResponseSchema>;
+export type ConversationMutationResult = z.infer<typeof conversationMutationResultSchema>;
+export type ConversationMessage = z.infer<typeof conversationMessageSchema>;
+export type ConversationMessageListQuery = z.infer<typeof conversationMessageListQuerySchema>;
+export type ConversationMessageListResponse = z.infer<typeof conversationMessageListResponseSchema>;
+export type DeleteConversationMessagesInput = z.infer<typeof deleteConversationMessagesInputSchema>;
+export type SendConversationMessageInput = z.infer<typeof sendConversationMessageInputSchema>;
+export type RealtimeEvent = z.infer<typeof realtimeEventSchema>;
+export type NotificationSettings = z.infer<typeof notificationSettingsSchema>;
+export type NotificationRecord = z.infer<typeof notificationRecordSchema>;
+export type ReminderPreference = z.infer<typeof reminderPreferenceSchema>;
+export type ReminderUpsertInput = z.infer<typeof reminderUpsertInputSchema>;
+export type NotificationUpdateInput = z.infer<typeof notificationUpdateSchema>;
+export type NotificationsListResponse = z.infer<typeof notificationsListResponseSchema>;
+export type RemindersListResponse = z.infer<typeof remindersListResponseSchema>;

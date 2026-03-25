@@ -1,16 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { startTransition, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 import { otpRequestSchema, otpVerifySchema, type OtpRequestInput, type OtpVerifyInput } from "@roomxchange/contracts";
-import { theme } from "../theme";
+import { sanitizePhone } from "@roomxchange/shared";
 import { useSession } from "../session-provider";
+import { ScaleButton } from "./scale-button";
 
-export function AuthPanel({ title = "Verify your phone" }: { title?: string }) {
+export function AuthPanel({ title, mode = "login" }: { title?: string; mode?: "login" | "signup" }) {
   const { api, setSession } = useSession();
-  const [challenge, setChallenge] = useState<{ phone: string; session: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [challenge, setChallenge] = useState<{ phone: string; session: string; name?: string; email?: string } | null>(null);
   const [pending, setPending] = useState(false);
+  const [demoPending, setDemoPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const requestForm = useForm<OtpRequestInput>({
     resolver: zodResolver(otpRequestSchema),
@@ -22,26 +24,28 @@ export function AuthPanel({ title = "Verify your phone" }: { title?: string }) {
     defaultValues: { phone: "", session: "", code: "", name: "", email: "" }
   });
 
-  const submitRequest = requestForm.handleSubmit(async (values) => {
+  const onRequestOtp = requestForm.handleSubmit(async (values) => {
     try {
       setPending(true);
       setError(null);
-      const response = await api.requestOtp(values);
-      setChallenge({ phone: values.phone, session: response.session });
+      const result = await api.requestOtp(values);
+      const normalizedPhone = sanitizePhone(values.phone);
+      setChallenge({ phone: normalizedPhone, session: result.session, name: values.name, email: values.email });
       verifyForm.reset({
-        ...values,
         code: "",
-        session: response.session,
-        phone: values.phone
+        email: values.email,
+        name: values.name,
+        phone: normalizedPhone,
+        session: result.session
       });
-    } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "Unable to send OTP.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? "We couldn't send the code right now." : "We couldn't send the code right now.");
     } finally {
       setPending(false);
     }
   });
 
-  const submitVerify = verifyForm.handleSubmit(async (values) => {
+  const onVerifyOtp = verifyForm.handleSubmit(async (values) => {
     try {
       setPending(true);
       setError(null);
@@ -49,119 +53,103 @@ export function AuthPanel({ title = "Verify your phone" }: { title?: string }) {
       startTransition(() => {
         void setSession(nextSession);
       });
-    } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "Unable to verify OTP.");
+    } catch (verifyError) {
+      setError(verifyError instanceof Error ? "We couldn't verify that code right now." : "We couldn't verify that code right now.");
     } finally {
       setPending(false);
     }
   });
 
+  const onUseDemoAccount = async () => {
+    try {
+      setDemoPending(true);
+      setError(null);
+      const result = await api.bootstrapDemo({ signIn: true });
+      if (!result.session) {
+        throw new Error("Demo account unavailable");
+      }
+      startTransition(() => {
+        void setSession(result.session);
+      });
+    } catch (demoError) {
+      setError(demoError instanceof Error ? "We couldn't open the demo account right now." : "We couldn't open the demo account right now.");
+    } finally {
+      setDemoPending(false);
+    }
+  };
+
   return (
-    <View
-      style={{
-        backgroundColor: "rgba(255,253,250,0.95)",
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        borderRadius: 28,
-        padding: 22,
-        gap: 14
-      }}
-    >
-      <Text style={{ fontSize: 28, fontWeight: "700", color: theme.colors.text }}>{title}</Text>
-      <Text style={{ color: theme.colors.textMuted }}>
-        RoomXchange uses phone OTP for both mobile and web so your subscription status stays in sync.
-      </Text>
+    <View className="rounded-3xl bg-white p-5">
+      {title ? <Text className="font-jakarta-bold text-2xl text-rx-text">{title}</Text> : null}
 
       {!challenge ? (
-        <View style={{ gap: 12 }}>
-          <Controller
-            control={requestForm.control}
-            name="phone"
-            render={({ field }) => (
-              <TextInput
-                placeholder="+1 555 123 4567"
-                placeholderTextColor={theme.colors.textMuted}
-                style={fieldStyle}
-                value={field.value}
-                onChangeText={field.onChange}
-              />
-            )}
-          />
-          <Controller
-            control={requestForm.control}
-            name="name"
-            render={({ field }) => (
-              <TextInput
-                placeholder="Full name"
-                placeholderTextColor={theme.colors.textMuted}
-                style={fieldStyle}
-                value={field.value}
-                onChangeText={field.onChange}
-              />
-            )}
-          />
-          <Controller
-            control={requestForm.control}
-            name="email"
-            render={({ field }) => (
-              <TextInput
-                placeholder="Email for receipts"
-                placeholderTextColor={theme.colors.textMuted}
-                style={fieldStyle}
-                value={field.value}
-                onChangeText={field.onChange}
-              />
-            )}
-          />
-          {error ? <Text style={{ color: theme.colors.danger }}>{error}</Text> : null}
-          <Pressable style={buttonStyle} onPress={() => void submitRequest()} disabled={pending}>
-            <Text style={buttonLabelStyle}>{pending ? "Sending..." : "Send OTP"}</Text>
-          </Pressable>
+        <View className={`${title ? "mt-5" : ""} gap-3`}>
+          {mode === "signup" ? (
+            <>
+              <Text className="font-jakarta-bold text-sm text-rx-text">Full name</Text>
+              <Controller control={requestForm.control} name="name" render={({ field }) => <Input placeholder="Ama Ofori" returnKeyType="next" value={field.value ?? ""} onChangeText={field.onChange} />} />
+              <Text className="font-jakarta-bold text-sm text-rx-text">Email</Text>
+              <Controller control={requestForm.control} name="email" render={({ field }) => <Input placeholder="ama@example.com" keyboardType="email-address" returnKeyType="next" value={field.value ?? ""} onChangeText={field.onChange} />} />
+            </>
+          ) : null}
+          <Text className="font-jakarta-bold text-sm text-rx-text">Phone number</Text>
+          <Controller control={requestForm.control} name="phone" render={({ field }) => <Input placeholder="024 123 4567" keyboardType="phone-pad" returnKeyType="done" value={field.value} onChangeText={field.onChange} />} />
+          {error ? <Text className="font-jakarta text-sm text-red-600">{error}</Text> : null}
+          <ScaleButton onPress={() => void onRequestOtp()} className="mt-1 rounded-full bg-rx-accent py-4">
+            <Text className="text-center font-jakarta-bold text-base text-white">
+              {pending ? "Sending..." : mode === "signup" ? "Create account" : "Send OTP"}
+            </Text>
+          </ScaleButton>
+          {__DEV__ ? (
+            <ScaleButton onPress={() => void onUseDemoAccount()} className="rounded-full border border-rx-border bg-rx-background py-4">
+              <Text className="text-center font-jakarta-bold text-base text-rx-text">{demoPending ? "Preparing demo..." : "Use E2E test account"}</Text>
+              <Text className="mt-1 text-center font-jakarta text-xs text-rx-muted">Seeds demo listings and signs in instantly</Text>
+            </ScaleButton>
+          ) : null}
         </View>
       ) : (
-        <View style={{ gap: 12 }}>
-          <Text style={{ color: theme.colors.textMuted }}>We sent a code to {challenge.phone}. Finish verification to continue.</Text>
-          <Controller
-            control={verifyForm.control}
-            name="code"
-            render={({ field }) => (
-              <TextInput
-                placeholder="123456"
-                placeholderTextColor={theme.colors.textMuted}
-                style={fieldStyle}
-                value={field.value}
-                onChangeText={field.onChange}
-              />
-            )}
-          />
-          {error ? <Text style={{ color: theme.colors.danger }}>{error}</Text> : null}
-          <Pressable style={buttonStyle} onPress={() => void submitVerify()} disabled={pending}>
-            <Text style={buttonLabelStyle}>{pending ? "Verifying..." : "Verify OTP"}</Text>
-          </Pressable>
+        <View className={`${title ? "mt-5" : ""} gap-3`}>
+          <Text className="font-jakarta-bold text-sm text-rx-text">OTP code</Text>
+          <Text className="font-jakarta text-sm text-rx-muted">Enter the code sent to {challenge.phone}.</Text>
+          <Controller control={verifyForm.control} name="code" render={({ field }) => <Input placeholder="123456" keyboardType="number-pad" returnKeyType="done" value={field.value} onChangeText={field.onChange} />} />
+          {error ? <Text className="font-jakarta text-sm text-red-600">{error}</Text> : null}
+          <ScaleButton onPress={() => void onVerifyOtp()} className="mt-1 rounded-full bg-rx-accent py-4">
+            <Text className="text-center font-jakarta-bold text-base text-white">{pending ? "Verifying..." : mode === "signup" ? "Verify and continue" : "Verify OTP"}</Text>
+          </ScaleButton>
+          {__DEV__ ? (
+            <ScaleButton onPress={() => void onUseDemoAccount()} className="rounded-full border border-rx-border bg-rx-background py-4">
+              <Text className="text-center font-jakarta-bold text-base text-rx-text">{demoPending ? "Preparing demo..." : "Use E2E test account"}</Text>
+              <Text className="mt-1 text-center font-jakarta text-xs text-rx-muted">Skip OTP and open the seeded account</Text>
+            </ScaleButton>
+          ) : null}
         </View>
       )}
     </View>
   );
 }
 
-const fieldStyle = {
-  borderWidth: 1,
-  borderColor: theme.colors.border,
-  borderRadius: 18,
-  paddingHorizontal: 16,
-  paddingVertical: 14,
-  color: theme.colors.text,
-  backgroundColor: "white"
-} as const;
-
-const buttonStyle = {
-  backgroundColor: theme.colors.accent,
-  paddingVertical: 16,
-  borderRadius: 999,
-  alignItems: "center"
-} as const;
-
-const buttonLabelStyle = {
-  color: "white",
-  fontWeight: "700"
-} as const;
+function Input({
+  placeholder,
+  value,
+  onChangeText,
+  keyboardType,
+  returnKeyType
+}: {
+  placeholder: string;
+  value?: string;
+  onChangeText: (value: string) => void;
+  keyboardType?: "default" | "phone-pad" | "number-pad" | "email-address";
+  returnKeyType?: "done" | "next";
+}) {
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChangeText}
+      keyboardType={keyboardType}
+      returnKeyType={returnKeyType}
+      placeholder={placeholder}
+      placeholderTextColor="#6B7280"
+      className="rounded-2xl border border-rx-border bg-rx-background px-4 py-4 font-jakarta text-base leading-6 text-rx-text"
+    />
+  );
+}

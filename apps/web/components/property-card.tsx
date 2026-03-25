@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { Camera, Diamond, MapPinned } from "lucide-react";
 import { formatCurrency, type ListingSummary } from "@roomxchange/shared";
 
 export function PropertyCard({ listing, href = "/subscribe" }: { listing: ListingSummary; href?: string }) {
   return (
     <Link
-      href={href}
+      href={href as Route}
       className="card"
       style={{ overflow: "hidden", display: "grid", minHeight: 360, background: "rgba(255,255,255,0.86)" }}
     >

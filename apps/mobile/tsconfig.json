@@ -1,15 +1,20 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "allowJs": true,
+    "customConditions": ["react-native"],
     "jsx": "react-jsx",
-    "types": [
-      "expo-router/entry"
-    ]
+    "jsxImportSource": "nativewind",
+    "lib": ["DOM", "ESNext"],
+    "moduleDetection": "force",
+    "noEmit": true
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.d.ts",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
   ]
 }
