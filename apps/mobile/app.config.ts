@@ -21,7 +21,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: "com.roomxchange.mobile",
-    googleServicesFile: "./google-services.json",
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
     adaptiveIcon: {
       foregroundImage: "./src/assets/icon.png",
       backgroundColor: "#FCFCFA"
