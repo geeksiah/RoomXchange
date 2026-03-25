@@ -130,8 +130,7 @@ export class RoomXchangeStack extends Stack {
     const userPool = new UserPool(this, "UserPool", {
       selfSignUpEnabled: false,
       signInAliases: {
-        phone: true,
-        email: true
+        phone: true
       },
       autoVerify: {
         phone: true

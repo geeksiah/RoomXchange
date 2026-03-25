@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { FlatList, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Alert, FlatList, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { formatAmenityLabel, formatMonthlyPrice } from "@roomxchange/shared";
@@ -14,6 +14,7 @@ import { useSession } from "../../src/session-provider";
 export default function ListingDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { api, session } = useSession();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -40,6 +41,19 @@ export default function ListingDetailScreen() {
         pathname: "/messages/[conversationId]",
         params: { conversationId: conversation.conversationId }
       } as never);
+    }
+  });
+
+  const deleteListingMutation = useMutation({
+    mutationFn: () => api.deleteListing(params.id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["home-feed"] }),
+        queryClient.invalidateQueries({ queryKey: ["explore-feed"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-listings"] }),
+        queryClient.invalidateQueries({ queryKey: ["listing", params.id] })
+      ]);
+      router.replace("/profile/listings");
     }
   });
 
@@ -95,20 +109,23 @@ export default function ListingDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
       <View
-        className="absolute inset-x-0 z-10 bg-black/35"
-        style={{ height: insets.top + 68 }}
+        className="absolute inset-x-0 z-10 border-b border-rx-border bg-white"
+        style={{ height: insets.top + 72 }}
       />
       <View
         className="absolute left-4 right-4 z-20 flex-row items-center justify-between"
-        style={{ top: insets.top + 12 }}
+        style={{ top: insets.top + 14 }}
       >
         <BackIconButton fallbackPath="/" />
-        <View className="rounded-full bg-black/55 px-4 py-2">
-          <Text className="font-jakarta text-sm text-white">{listing.images.length} photos</Text>
+        <Text className="flex-1 px-3 text-center font-jakarta-bold text-lg text-rx-text" numberOfLines={1}>
+          Listing details
+        </Text>
+        <View className="rounded-full bg-rx-background px-4 py-2">
+          <Text className="font-jakarta text-sm text-rx-text">{listing.images.length} photos</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 180 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 180, paddingTop: insets.top + 72 }}>
         <ScrollView
           ref={heroGalleryRef}
           horizontal
@@ -193,8 +210,38 @@ export default function ListingDetailScreen() {
           </Text>
 
           {session?.user.userId === listing.ownerId ? (
-            <View className="rounded-full bg-rx-background px-5 py-4">
-              <Text className="font-jakarta text-sm text-rx-muted">Your listing</Text>
+            <View className="flex-row gap-2">
+              <ScaleButton
+                onPress={() =>
+                  router.push({
+                    pathname: "/profile/listings/[id]",
+                    params: { id: listing.listingId }
+                  } as never)
+                }
+                className="rounded-full bg-rx-background px-4 py-4"
+              >
+                <Text className="font-jakarta-bold text-sm text-rx-text">Edit</Text>
+              </ScaleButton>
+              <ScaleButton
+                onPress={() => {
+                  if (deleteListingMutation.isPending) {
+                    return;
+                  }
+                  Alert.alert("Delete listing", "This will remove the listing from the marketplace.", [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Delete",
+                      style: "destructive",
+                      onPress: () => deleteListingMutation.mutate()
+                    }
+                  ]);
+                }}
+                className="rounded-full bg-rx-accent px-4 py-4"
+              >
+                <Text className="font-jakarta-bold text-sm text-white">
+                  {deleteListingMutation.isPending ? "Deleting..." : "Delete"}
+                </Text>
+              </ScaleButton>
             </View>
           ) : (
             <ScaleButton onPress={openContact} className="rounded-full bg-rx-accent px-5 py-4">

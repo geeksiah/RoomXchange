@@ -327,13 +327,17 @@ async function createOrUpdatePasswordUser(input: {
 }
 
 async function signInWithPassword(identifier: string, password: string) {
+  const normalized = normalizeIdentifier(identifier);
+  const user = await findUserByIdentifier(normalized);
+  const resolvedUsername = user?.cognitoUsername ?? (await findCognitoUsernameByAlias(normalized)) ?? normalized;
+
   return cognito.send(
     new AdminInitiateAuthCommand({
       UserPoolId: env.USER_POOL_ID,
       ClientId: env.USER_POOL_CLIENT_ID,
       AuthFlow: "ADMIN_USER_PASSWORD_AUTH",
       AuthParameters: {
-        USERNAME: normalizeIdentifier(identifier),
+        USERNAME: resolvedUsername,
         PASSWORD: password
       }
     })

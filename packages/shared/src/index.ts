@@ -33,6 +33,8 @@ import {
   reminderUpsertInputSchema,
   otpVerifySchema,
   profileUpdateSchema,
+  pushTokenDeleteSchema,
+  pushTokenUpsertSchema,
   realtimeEventSchema,
   reportCreateSchema,
   reportSchema,
@@ -78,6 +80,8 @@ import {
   type OtpVerifyInput,
   type OpenConversationInput,
   type ProfileUpdateInput,
+  type PushTokenDeleteInput,
+  type PushTokenUpsertInput,
   type RealtimeEvent,
   type Report,
   type ReportCreateInput,
@@ -499,6 +503,14 @@ export function createApiClient(options: ApiClientOptions = {}) {
     deleteReminder(reminderId: string) {
       return request(`/app/reminders/${reminderId}`, conversationMutationResultSchema, { method: "DELETE" }, options);
     },
+    registerPushToken(input: PushTokenUpsertInput) {
+      pushTokenUpsertSchema.parse(input);
+      return request("/app/push-token/register", conversationMutationResultSchema, { method: "POST", body: input }, options);
+    },
+    unregisterPushToken(input: PushTokenDeleteInput) {
+      pushTokenDeleteSchema.parse(input);
+      return request("/app/push-token/unregister", conversationMutationResultSchema, { method: "POST", body: input }, options);
+    },
     getAdminNotificationSettings() {
       return request("/admin/notifications/settings", notificationSettingsSchema, {}, options);
     },
@@ -604,6 +616,8 @@ export type {
   OtpRequestInput,
   OtpVerifyInput,
   ProfileUpdateInput,
+  PushTokenDeleteInput,
+  PushTokenUpsertInput,
   RealtimeEvent,
   Report,
   ReportCreateInput,

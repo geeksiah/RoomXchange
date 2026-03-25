@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, ScrollView, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,6 +7,7 @@ import { formatMonthlyPrice } from "@roomxchange/shared";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { BackIconButton } from "../../src/components/back-icon-button";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
+import { ScreenHeader } from "../../src/components/screen-header";
 import { ScaleButton } from "../../src/components/scale-button";
 import { useSession } from "../../src/session-provider";
 
@@ -91,14 +92,16 @@ export default function ProfileListingsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
       <DismissKeyboardView className="flex-1">
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingBottom: 176 }}>
-          <View className="flex-row items-center justify-between pb-4">
-            <BackIconButton fallbackPath="/profile" />
-            <Text className="font-jakarta-bold text-2xl text-rx-text">My listings</Text>
+        <ScreenHeader
+          title="My listings"
+          left={<BackIconButton fallbackPath="/profile" />}
+          right={
             <ScaleButton onPress={() => router.push("/add")} className="rounded-full bg-rx-accent px-4 py-2">
               <Text className="font-jakarta-bold text-xs text-white">New listing</Text>
             </ScaleButton>
-          </View>
+          }
+        />
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingBottom: 176 }}>
 
           <View className="rounded-3xl bg-white p-5">
             <View className="flex-row gap-3">
@@ -181,6 +184,23 @@ export default function ProfileListingsScreen() {
                       className="flex-1 rounded-full bg-rx-text py-3"
                     >
                       <Text className="text-center font-jakarta-bold text-sm text-white">{listing.status === "archived" ? "List again" : "Unlist"}</Text>
+                    </ScaleButton>
+                    <ScaleButton
+                      onPress={() =>
+                        Alert.alert("Delete listing", "This will remove the listing from the marketplace.", [
+                          { text: "Cancel", style: "cancel" },
+                          {
+                            text: "Delete",
+                            style: "destructive",
+                            onPress: () => deleteListingMutation.mutate(listing.listingId)
+                          }
+                        ])
+                      }
+                      className="rounded-full bg-rx-accent px-4 py-3"
+                    >
+                      <Text className="text-center font-jakarta-bold text-sm text-white">
+                        {deleteListingMutation.isPending ? "..." : "Delete"}
+                      </Text>
                     </ScaleButton>
                   </View>
                 </View>

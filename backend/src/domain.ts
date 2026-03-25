@@ -148,6 +148,28 @@ export type UserReminderItem = ReminderPreference & {
   userId: string;
 };
 
+export type UserPushTokenItem = {
+  PK: string;
+  SK: string;
+  entity: "USER_PUSH_TOKEN";
+  userId: string;
+  token: string;
+  platform: "ios" | "android";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PushTokenLookupItem = {
+  PK: string;
+  SK: string;
+  entity: "PUSH_TOKEN_LOOKUP";
+  userId: string;
+  token: string;
+  platform: "ios" | "android";
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type UserSocketItem = {
   PK: string;
   SK: string;

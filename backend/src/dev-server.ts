@@ -107,6 +107,8 @@ function resolveResource(pathname: string) {
       resource: "/app/notifications/{id}",
       params: (match) => ({ id: match[1] })
     },
+    { test: /^\/app\/push-token\/register$/, resource: "/app/push-token/register" },
+    { test: /^\/app\/push-token\/unregister$/, resource: "/app/push-token/unregister" },
     { test: /^\/app\/reminders$/, resource: "/app/reminders" },
     {
       test: /^\/app\/reminders\/([^/]+)$/,

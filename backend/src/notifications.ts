@@ -15,6 +15,7 @@ import { env } from "./config.js";
 import type { NotificationSettingsItem, UserNotificationItem, UserReminderItem } from "./domain.js";
 import { AppError, assertFound } from "./errors.js";
 import { tableKeys } from "./keys.js";
+import { sendPushNotificationToUser } from "./push.js";
 import { pushRealtimeToUser } from "./realtime.js";
 
 function getDefaultNotificationSettings() {
@@ -293,6 +294,7 @@ export async function createUserNotification(
     type: "notification.created",
     notification
   });
+  await sendPushNotificationToUser(userId, notification);
 
   return notification;
 }
