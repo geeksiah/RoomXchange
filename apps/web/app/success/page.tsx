@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { Providers } from "../providers";
 import { SuccessSyncContent } from "./success-content";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +24,10 @@ function SuccessFallback() {
 
 export default function SuccessPage() {
   return (
-    <Suspense fallback={<SuccessFallback />}>
-      <SuccessSyncContent />
-    </Suspense>
+    <Providers>
+      <Suspense fallback={<SuccessFallback />}>
+        <SuccessSyncContent />
+      </Suspense>
+    </Providers>
   );
 }

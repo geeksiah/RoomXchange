@@ -14,6 +14,7 @@
     "dev:web": "npm run dev --workspace @roomxchange/web",
     "dev:mobile": "npm run dev --workspace @roomxchange/mobile",
     "dev:backend": "npm run dev --workspace @roomxchange/backend",
+    "postinstall": "node ./scripts/fix-expo-metro-windows.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "cdk:synth": "npm run synth --workspace @roomxchange/cdk",

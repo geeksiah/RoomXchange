@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export default function NotFoundPage() {
   return (
     <main className="shell" style={{ padding: "48px 0 80px" }}>
@@ -12,9 +10,9 @@ export default function NotFoundPage() {
           The page you tried to open is unavailable.
         </p>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <Link className="button" href="/">
+          <a className="button" href="/">
             Go home
-          </Link>
+          </a>
           <a className="button secondary" href="/#downloads">
             Download app
           </a>

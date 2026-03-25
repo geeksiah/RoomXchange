@@ -17,6 +17,19 @@ Notifications.setNotificationHandler({
   })
 });
 
+function isPermissionGranted(status: Notifications.NotificationPermissionsStatus) {
+  const candidate = status as Notifications.NotificationPermissionsStatus & {
+    granted?: boolean;
+    status?: string;
+  };
+
+  if (typeof candidate.granted === "boolean") {
+    return candidate.granted;
+  }
+
+  return candidate.status === "granted";
+}
+
 export function NotificationsProvider({ children }: { children: ReactNode }) {
   const pushPreferenceKey = "roomxchange.mobile.push-enabled";
   const router = useRouter();
@@ -114,14 +127,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
       try {
         const existing = await Notifications.getPermissionsAsync();
-        let status = existing.status;
-        if (status !== "granted") {
+        let granted = isPermissionGranted(existing);
+        if (!granted) {
           const requested = await Notifications.requestPermissionsAsync();
-          status = requested.status;
+          granted = isPermissionGranted(requested);
         }
 
-        setPermissionStatus(status === "granted" ? "granted" : "denied");
-        if (status === "granted" && projectId) {
+        setPermissionStatus(granted ? "granted" : "denied");
+        if (granted && projectId) {
           const token = await Notifications.getExpoPushTokenAsync({ projectId });
           setExpoPushToken(token.data);
         }
