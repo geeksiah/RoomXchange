@@ -8,7 +8,7 @@ import { ScaleButton } from "../../src/components/scale-button";
 
 export default function AboutAppScreen() {
   const version = Constants.expoConfig?.version ?? "1.0.0";
-  const supportUrl = (Constants.expoConfig?.extra?.supportUrl as string | undefined) ?? "";
+  const supportUrl = ((Constants.expoConfig?.extra?.supportUrl as string | undefined) ?? "").trim();
 
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
@@ -32,7 +32,7 @@ export default function AboutAppScreen() {
         <View className="mt-5 rounded-3xl bg-white p-5">
           <Text className="font-jakarta-bold text-xl text-rx-text">Support RoomXchange</Text>
           <Text className="mt-2 font-jakarta text-sm leading-6 text-rx-muted">
-            To avoid store-payment issues, support is handled on the web. You can open our donation page in your browser.
+            Support lives on our website together with download links for the app.
           </Text>
           <ScaleButton
             disabled={!supportUrl}
@@ -45,7 +45,7 @@ export default function AboutAppScreen() {
             className={`mt-4 rounded-full py-4 ${supportUrl ? "bg-rx-accent" : "bg-rx-border"}`}
           >
             <Text className="text-center font-jakarta-bold text-base text-white">
-              {supportUrl ? "Open support page" : "Support page unavailable"}
+              {supportUrl ? "Open support website" : "Support link unavailable"}
             </Text>
           </ScaleButton>
         </View>

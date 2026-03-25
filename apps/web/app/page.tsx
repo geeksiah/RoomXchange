@@ -2,99 +2,157 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, CheckCircle2, DoorOpen, Image as ImageIcon, PhoneForwarded, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  HeartHandshake,
+  MessageCircle,
+  Search,
+  ShieldCheck,
+  Smartphone,
+  Sparkles
+} from "lucide-react";
 import { PropertyCard } from "../components/property-card";
 import { useSession } from "../components/session-provider";
 
-const highlights = [
-  {
-    title: "List for free",
-    copy: "Owners publish image-first listings with VR links and presigned media uploads."
-  },
-  {
-    title: "Pay on web only",
-    copy: "Mobile contact flows always leave the app for a single external checkout route."
-  },
-  {
-    title: "Contact after subscription",
-    copy: "Phone reveal is protected until Paystack activates access on the backend."
-  }
+const features = [
+  { icon: Search, title: "Search fast", copy: "Live locations, saved filters, clean map discovery." },
+  { icon: MessageCircle, title: "Chat directly", copy: "Message owners and keep conversations in one place." },
+  { icon: Sparkles, title: "List clearly", copy: "Owners publish bright, image-first listings without clutter." }
 ];
+
+const supportAmounts = ["GHS 20", "GHS 50", "GHS 100", "GHS 200"];
+const supportMethods = ["Paystack", "Hubtel"];
 
 export default function HomePage() {
   const { api, session } = useSession();
+  const supportUrl = (process.env.NEXT_PUBLIC_ROOMXCHANGE_SUPPORT_URL ?? "").trim();
+  const playStoreUrl = (process.env.NEXT_PUBLIC_ROOMXCHANGE_PLAYSTORE_URL ?? "").trim();
+  const appStoreUrl = (process.env.NEXT_PUBLIC_ROOMXCHANGE_APPSTORE_URL ?? "").trim();
   const feedQuery = useQuery({
     queryKey: ["public-feed"],
     queryFn: () => api.getFeed({ limit: 6 })
   });
 
   return (
-    <main className="shell" style={{ padding: "24px 0 80px", display: "grid", gap: 32 }}>
-      <section
-        className="card"
-        style={{
-          padding: "28px clamp(24px, 6vw, 64px)",
-          display: "grid",
-          gridTemplateColumns: "1.1fr 0.9fr",
-          gap: 28,
-          alignItems: "center"
-        }}
-      >
-        <div style={{ display: "grid", gap: 18 }}>
-          <div className="pill" style={{ width: "fit-content" }}>
+    <main className="landing-page shell">
+      <section className="landing-hero card">
+        <div className="landing-copy">
+          <div className="pill landing-pill">
             <ShieldCheck size={16} />
-            Apple-safe monetization locked
+            Mobile-first room marketplace
           </div>
-          <h1 style={{ fontSize: "clamp(2.5rem, 7vw, 5.2rem)", lineHeight: 0.95, margin: 0 }}>
-            Trade access to exceptional rooms without clutter or in-app checkout.
-          </h1>
-          <p className="muted" style={{ fontSize: 18, maxWidth: 620, margin: 0 }}>
-            RoomXchange is a premium peer-to-peer property marketplace with image-first discovery, VR-ready listings,
-            and a single web-only subscription flow to contact owners.
+          <h1>Find real rooms faster.</h1>
+          <p className="muted landing-lead">
+            Search, save, message, and manage listings from one clean mobile experience. Support and downloads stay on the web.
           </p>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div className="landing-cta-row">
             <Link className="button" href={session ? "/dashboard/listings/new" : "/subscribe"}>
               {session ? "Create listing" : "Get access"}
             </Link>
-            <Link className="button secondary" href="/dashboard">
-              Open dashboard
-            </Link>
+            <a className="button secondary" href="#downloads">
+              Download app
+            </a>
+            <a className="button secondary" href="#support">
+              Support RoomXchange
+            </a>
+          </div>
+          <div className="landing-mini-proof">
+            <span className="landing-metric">
+              <strong>{feedQuery.data?.items.length ?? 0}</strong>
+              Live listings
+            </span>
+            <span className="landing-metric">
+              <strong>iOS</strong>
+              + Android
+            </span>
+            <span className="landing-metric">
+              <strong>Web</strong>
+              Support page
+            </span>
           </div>
         </div>
-        <div style={{ display: "grid", gap: 14 }}>
-          {highlights.map((item) => (
-            <article key={item.title} className="stat">
-              <h3 style={{ marginTop: 0 }}>{item.title}</h3>
-              <p className="muted" style={{ marginBottom: 0 }}>
-                {item.copy}
-              </p>
-            </article>
-          ))}
+
+        <div className="landing-visual">
+          <div className="landing-phone">
+            <div className="landing-phone-top">
+              <span>9:41</span>
+              <span>RoomXchange</span>
+            </div>
+            <div className="landing-phone-media" />
+            <div className="landing-phone-panel">
+              <div className="landing-phone-row">
+                <strong>Spintex studio</strong>
+                <span className="landing-price">GHS 850</span>
+              </div>
+              <p className="muted">Accra • Private bath • 4 amenities</p>
+              <div className="landing-chip-row">
+                <span className="pill">Verified</span>
+                <span className="pill">Realtime map</span>
+                <span className="pill">Chat ready</span>
+              </div>
+            </div>
+          </div>
+          <div className="landing-float-card">
+            <p className="landing-float-label">Support on web</p>
+            <strong>Simple external checkout</strong>
+            <span className="muted">Paystack or Hubtel</span>
+          </div>
         </div>
       </section>
 
-      <section className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-        <article className="card" style={{ padding: 24 }}>
-          <DoorOpen size={28} color="var(--rx-accent)" />
-          <h3>Free owner listings</h3>
-          <p className="muted">Owners publish as many spaces as they need with rich descriptions, amenities, and VR links.</p>
-        </article>
-        <article className="card" style={{ padding: 24 }}>
-          <ImageIcon size={28} color="var(--rx-accent)" />
-          <h3>Image-first discovery</h3>
-          <p className="muted">Warm, premium layouts put photography first across web and mobile without resorting to clutter.</p>
-        </article>
-        <article className="card" style={{ padding: 24 }}>
-          <PhoneForwarded size={28} color="var(--rx-accent)" />
-          <h3>Contact locked behind web checkout</h3>
-          <p className="muted">The app never processes payments and never shows multiple payment links. One route, one compliance story.</p>
-        </article>
+      <section className="landing-feature-grid">
+        {features.map((feature) => {
+          const Icon = feature.icon;
+          return (
+            <article key={feature.title} className="card landing-feature-card">
+              <div className="landing-feature-icon">
+                <Icon size={20} />
+              </div>
+              <h3>{feature.title}</h3>
+              <p className="muted">{feature.copy}</p>
+            </article>
+          );
+        })}
       </section>
 
-      <section>
+      <section id="downloads" className="card landing-downloads">
+        <div className="landing-section-copy">
+          <div className="pill landing-pill">
+            <Smartphone size={16} />
+            Direct downloads
+          </div>
+          <h2>Install the app.</h2>
+          <p className="muted">
+            Install the app, sign in once, and continue across listings, alerts, conversations, and profile tools.
+          </p>
+        </div>
+        <div className="landing-store-grid">
+          {playStoreUrl ? (
+            <a className="button" href={playStoreUrl} target="_blank" rel="noreferrer">
+              Google Play
+            </a>
+          ) : (
+            <span className="button secondary landing-disabled-button">
+              Google Play soon
+            </span>
+          )}
+          {appStoreUrl ? (
+            <a className="button secondary" href={appStoreUrl} target="_blank" rel="noreferrer">
+              App Store
+            </a>
+          ) : (
+            <span className="button secondary landing-disabled-button">
+              App Store soon
+            </span>
+          )}
+        </div>
+      </section>
+
+      <section className="landing-feed">
         <div className="section-title">
           <div>
-            <h2 style={{ marginBottom: 6 }}>Fresh listings</h2>
+            <h2 style={{ marginBottom: 6 }}>Latest listings</h2>
             <p className="muted" style={{ margin: 0 }}>
               Live feed from the backend. No placeholders.
             </p>
@@ -105,7 +163,7 @@ export default function HomePage() {
           </Link>
         </div>
         {feedQuery.data?.items.length ? (
-          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+          <div className="landing-feed-grid">
             {feedQuery.data.items.map((listing) => (
               <PropertyCard key={listing.listingId} listing={listing} />
             ))}
@@ -117,15 +175,60 @@ export default function HomePage() {
         )}
       </section>
 
-      <section className="card" style={{ padding: 28, display: "grid", gap: 12 }}>
-        <div className="pill" style={{ width: "fit-content" }}>
-          <CheckCircle2 size={16} />
-          Compliance snapshot
+      <section id="support" className="landing-support card">
+        <div className="landing-support-dark">
+          <div className="pill landing-dark-pill">
+            <HeartHandshake size={16} />
+            Support RoomXchange
+          </div>
+          <h2>Keep the app free.</h2>
+          <p className="landing-dark-copy">
+            Support hosting, moderation, and product updates from a simple external payment page.
+          </p>
+          <div className="landing-amount-grid">
+            {supportAmounts.map((amount) => (
+              <div key={amount} className="landing-amount-chip">
+                {amount}
+              </div>
+            ))}
+          </div>
         </div>
-        <strong>No in-app purchase. No embedded Stripe or Paystack checkout. One external web checkout path only.</strong>
-        <p className="muted" style={{ margin: 0 }}>
-          That keeps the mobile app free while the subscription workflow stays entirely on the web.
-        </p>
+
+        <div className="landing-support-side">
+          <div className="stat landing-support-card">
+            <h3>Choose a method</h3>
+            <div className="landing-method-grid">
+              {supportMethods.map((method, index) => (
+                <div key={method} className={`landing-method-row ${index === 0 ? "active" : ""}`}>
+                  <div>
+                    <strong>{method}</strong>
+                    <p className="muted">External checkout</p>
+                  </div>
+                  <CheckCircle2 size={18} color={index === 0 ? "var(--rx-accent)" : "var(--rx-text-muted)"} />
+                </div>
+              ))}
+            </div>
+            {supportUrl ? (
+              <a className="button" href={supportUrl} target="_blank" rel="noreferrer">
+                Continue to support page
+              </a>
+            ) : (
+              <span className="button secondary landing-disabled-button">
+                Support link unavailable
+              </span>
+            )}
+          </div>
+          <div className="stat landing-note-card">
+            <div className="pill landing-pill">
+              <CheckCircle2 size={16} />
+              Web-only support
+            </div>
+            <strong>Clean app. Separate support page.</strong>
+            <p className="muted">
+              It keeps the mobile experience focused and avoids mixing support payments into app functionality.
+            </p>
+          </div>
+        </div>
       </section>
     </main>
   );

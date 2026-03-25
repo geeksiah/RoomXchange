@@ -40,7 +40,9 @@ const config: ExpoConfig = {
     webUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_WEB_URL ?? "http://localhost:3000",
     socketUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_SOCKET_URL ?? "",
     pushProjectId: process.env.EXPO_PUBLIC_ROOMXCHANGE_PUSH_PROJECT_ID ?? "",
-    supportUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_SUPPORT_URL ?? process.env.EXPO_PUBLIC_ROOMXCHANGE_WEB_URL ?? ""
+    supportUrl:
+      process.env.EXPO_PUBLIC_ROOMXCHANGE_SUPPORT_URL ??
+      `${process.env.EXPO_PUBLIC_ROOMXCHANGE_WEB_URL ?? "http://localhost:3000"}#support`
   }
 };
 
