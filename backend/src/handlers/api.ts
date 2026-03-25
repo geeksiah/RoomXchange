@@ -16,7 +16,17 @@ import {
 } from "../admin.js";
 import { AppError } from "../errors.js";
 import { created, getCurrentUserId, getQuery, handleError, noContent, ok, parseBody } from "../http.js";
-import { getUserProfile, requestOtp, updateUserProfile, verifyOtp } from "../auth.js";
+import {
+  getUserProfile,
+  loginWithPassword,
+  requestOtp,
+  requestPasswordReset,
+  requestSignup,
+  updateUserProfile,
+  verifyOtp,
+  verifyPasswordReset,
+  verifySignup
+} from "../auth.js";
 import {
   deleteConversation,
   deleteConversationMessages,
@@ -82,6 +92,11 @@ const routePatterns = [
   "/admin/reports",
   "/admin/analytics",
   "/admin/auth/login",
+  "/auth/password-reset/request",
+  "/auth/password-reset/verify",
+  "/auth/signup/request",
+  "/auth/signup/verify",
+  "/auth/login",
   "/conversations/{id}/messages/delete",
   "/conversations/{id}/messages",
   "/conversations/read-all",
@@ -158,6 +173,26 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     if (resource === "/auth/request-otp" && event.httpMethod === "POST") {
       return created(await requestOtp(parseBody(event, passthroughSchema)));
+    }
+
+    if (resource === "/auth/signup/request" && event.httpMethod === "POST") {
+      return created(await requestSignup(parseBody(event, passthroughSchema)));
+    }
+
+    if (resource === "/auth/signup/verify" && event.httpMethod === "POST") {
+      return ok(await verifySignup(parseBody(event, passthroughSchema)));
+    }
+
+    if (resource === "/auth/login" && event.httpMethod === "POST") {
+      return ok(await loginWithPassword(parseBody(event, passthroughSchema)));
+    }
+
+    if (resource === "/auth/password-reset/request" && event.httpMethod === "POST") {
+      return created(await requestPasswordReset(parseBody(event, passthroughSchema)));
+    }
+
+    if (resource === "/auth/password-reset/verify" && event.httpMethod === "POST") {
+      return ok(await verifyPasswordReset(parseBody(event, passthroughSchema)));
     }
 
     if (resource === "/admin/auth/login" && event.httpMethod === "POST") {

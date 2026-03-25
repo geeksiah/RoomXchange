@@ -67,16 +67,16 @@ const localState: {
     {
       userId: "6b1d0d8c-5650-4703-b6d4-20b8c2579e11",
       phone: "+233240000001",
-      name: "Abbas Demo",
+      name: "RoomXchange Admin",
       avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
-      email: "abbas.demo@roomxchange.dev",
+      email: "admin@roomxchange.dev",
       phonePublic: false,
       role: "super_admin",
       accountStatus: "active",
       isSubscribed: true,
       subscriptionStatus: "active",
       subscriptionProvider: "roomxchange-local",
-      subscriptionPlan: "demo",
+      subscriptionPlan: "admin",
       subscriptionExpiresAt: "2027-03-24T00:00:00.000Z",
       listingsCount: 1,
       successfulListings: 1,
@@ -150,7 +150,7 @@ const localState: {
       listingPreviewImage: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80",
       buyer: {
         userId: "6b1d0d8c-5650-4703-b6d4-20b8c2579e11",
-        name: "Abbas Demo",
+        name: "RoomXchange Admin",
         avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"
       },
       owner: {
@@ -306,7 +306,7 @@ function syncListingOwnerContact(ownerId: string) {
 
 export async function localAdminLogin(input: unknown) {
   const parsed = adminLoginSchema.parse(input as AdminLoginInput);
-  const expectedEmail = process.env.ADMIN_WEB_EMAIL ?? "abbas.demo@roomxchange.dev";
+  const expectedEmail = process.env.ADMIN_WEB_EMAIL ?? "admin@roomxchange.dev";
   const expectedPassword = process.env.ADMIN_WEB_PASSWORD ?? "Admin@12345";
 
   if (parsed.email.toLowerCase() !== expectedEmail.toLowerCase() || parsed.password !== expectedPassword) {

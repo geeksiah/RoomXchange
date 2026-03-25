@@ -1,7 +1,5 @@
-import { PublishCommand } from "@aws-sdk/client-sns";
 import type { CreateAuthChallengeTriggerEvent } from "aws-lambda";
-import { sns } from "./aws.js";
-import { env } from "./config.js";
+import { sendOtpSms } from "./sms.js";
 
 function createCode() {
   return `${Math.floor(100000 + Math.random() * 900000)}`;
@@ -17,12 +15,7 @@ export async function handler(event: CreateAuthChallengeTriggerEvent) {
     ? previousChallenge.challengeMetadata.replace("CODE-", "")
     : createCode();
 
-  await sns.send(
-    new PublishCommand({
-      PhoneNumber: event.request.userAttributes.phone_number,
-      Message: env.OTP_SMS_TEMPLATE.replace("{{code}}", code)
-    })
-  );
+  await sendOtpSms(event.request.userAttributes.phone_number, code);
 
   event.response.publicChallengeParameters = {
     phone: event.request.userAttributes.phone_number

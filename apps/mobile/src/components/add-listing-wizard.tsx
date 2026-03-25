@@ -17,7 +17,6 @@ import {
   formatMonthlyPrice,
   roomXchangeConfig
 } from "@roomxchange/shared";
-import { isDemoSession } from "../demo-data";
 import { searchGhanaLocations } from "../ghana-locations";
 import { DismissKeyboardView } from "./dismiss-keyboard-view";
 import { ScaleButton } from "./scale-button";
@@ -268,11 +267,6 @@ export function AddListingWizard({ mode = "create", listingId, initialValues, on
           compress: 0.82,
           format
         });
-
-        if (isDemoSession(session)) {
-          uploaded.push(compressed.uri);
-          continue;
-        }
 
         const upload = await api.createUpload({
           fileName,

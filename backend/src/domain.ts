@@ -14,10 +14,42 @@ export type UserItem = UserProfile & {
   PK: string;
   SK: string;
   entity: "USER";
+  cognitoUsername?: string | null;
   paystackCustomerCode?: string | null;
   paystackSubscriptionCode?: string | null;
   GSI2PK?: string;
   GSI2SK?: string;
+};
+
+export type PendingSignupItem = {
+  PK: string;
+  SK: string;
+  entity: "PENDING_SIGNUP";
+  sessionId: string;
+  userId: string;
+  cognitoUsername: string;
+  phone: string;
+  email: string;
+  name: string;
+  code: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PendingPasswordResetItem = {
+  PK: string;
+  SK: string;
+  entity: "PASSWORD_RESET";
+  sessionId: string;
+  userId: string;
+  cognitoUsername: string;
+  phone: string;
+  identifier: string;
+  code: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ListingItem = Omit<Listing, "ownerContact"> & {

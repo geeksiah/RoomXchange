@@ -5,8 +5,6 @@ import path from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import type { IncomingHttpHeaders, IncomingMessage } from "node:http";
 import type { APIGatewayProxyEvent } from "aws-lambda";
-import { devBootstrapInputSchema } from "@roomxchange/contracts";
-import { bootstrapDevData } from "./dev-bootstrap.js";
 import { handler } from "./handlers/api.js";
 
 const port = Number(process.env.PORT ?? 4000);
@@ -75,24 +73,15 @@ function decodeClaims(headers: Record<string, string>) {
   }
 }
 
-function getLocalBaseUrl(req: IncomingMessage) {
-  return `http://${req.headers.host ?? `localhost:${port}`}`;
-}
-
-function getAssetContentType(fileName: string) {
-  if (fileName.endsWith(".png")) {
-    return "image/png";
-  }
-  if (fileName.endsWith(".webp")) {
-    return "image/webp";
-  }
-  return "image/jpeg";
-}
-
 function resolveResource(pathname: string) {
   const patterns: Array<{ test: RegExp; resource: string; params?: (match: RegExpMatchArray) => Record<string, string> }> = [
     { test: /^\/auth\/request-otp$/, resource: "/auth/request-otp" },
     { test: /^\/admin\/auth\/login$/, resource: "/admin/auth/login" },
+    { test: /^\/auth\/signup\/request$/, resource: "/auth/signup/request" },
+    { test: /^\/auth\/signup\/verify$/, resource: "/auth/signup/verify" },
+    { test: /^\/auth\/login$/, resource: "/auth/login" },
+    { test: /^\/auth\/password-reset\/request$/, resource: "/auth/password-reset/request" },
+    { test: /^\/auth\/password-reset\/verify$/, resource: "/auth/password-reset/verify" },
     { test: /^\/auth\/verify-otp$/, resource: "/auth/verify-otp" },
     { test: /^\/auth\/me$/, resource: "/auth/me" },
     { test: /^\/uploads\/presign$/, resource: "/uploads/presign" },
@@ -242,31 +231,6 @@ createServer(async (req, res) => {
 
   try {
     const body = await readBody(req);
-    if (url.pathname === "/dev/bootstrap" && req.method === "POST") {
-      const payload = body ? JSON.parse(body) : {};
-      const result = await bootstrapDevData(getLocalBaseUrl(req), devBootstrapInputSchema.parse(payload).signIn);
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify(result));
-      return;
-    }
-
-    if (url.pathname.startsWith("/dev/assets/demo/") && req.method === "GET") {
-      const fileName = decodeURIComponent(url.pathname.replace("/dev/assets/demo/", ""));
-      if (fileName.includes("..") || fileName.includes("/") || fileName.includes("\\")) {
-        res.writeHead(400, { "content-type": "application/json" });
-        res.end(JSON.stringify({ message: "Invalid asset path." }));
-        return;
-      }
-      const filePath = path.resolve(process.cwd(), "apps/mobile/src/assets/demo", fileName);
-      const contents = await readFile(filePath);
-      res.writeHead(200, {
-        "content-type": getAssetContentType(fileName),
-        "cache-control": "no-cache"
-      });
-      res.end(contents);
-      return;
-    }
-
     const response = await handler(toEvent(req, body));
     res.writeHead(response.statusCode, (response.headers ?? {}) as Record<string, string | number>);
     res.end(response.body);

@@ -38,9 +38,16 @@ export class RoomXchangeStack extends Stack {
     const webAppUrl = configuredWebUrl || (domain ? `https://${domain}` : "http://localhost:3000");
     const paystackSecret = process.env.ROOMXCHANGE_PAYSTACK_SECRET_KEY ?? "replace-me";
     const paystackPlanCode = process.env.ROOMXCHANGE_PAYSTACK_PLAN_CODE ?? "replace-me";
-    const adminWebEmail = process.env.ADMIN_WEB_EMAIL ?? "abbas.demo@roomxchange.dev";
+    const adminWebEmail = process.env.ADMIN_WEB_EMAIL ?? "admin@roomxchange.dev";
     const adminWebPhone = process.env.ADMIN_WEB_PHONE ?? "+233240000001";
     const adminWebPassword = process.env.ADMIN_WEB_PASSWORD ?? "Admin@12345";
+    const arkeselApiKey = process.env.ARKESEL_API_KEY ?? process.env.ROOMXCHANGE_ARKESEL_API_KEY ?? "";
+    const arkeselSenderId = process.env.ARKESEL_SENDER_ID ?? process.env.ROOMXCHANGE_ARKESEL_SENDER_ID ?? "eventpeepo";
+    const arkeselSmsApiUrl =
+      process.env.ARKESEL_SMS_API_URL ??
+      process.env.ROOMXCHANGE_ARKESEL_SMS_API_URL ??
+      "https://sms.arkesel.com/api/v2/sms/send";
+    const otpSmsTemplate = process.env.OTP_SMS_TEMPLATE ?? "Your RoomXchange verification code is {{code}}";
 
     const table = new Table(this, "RoomXchangeTable", {
       tableName,
@@ -107,24 +114,24 @@ export class RoomXchangeStack extends Stack {
     });
 
     const createAuthChallenge = this.createNodeFunction("CreateAuthChallengeFn", {
-      entry: path.join(repoRoot, "backend/src/cognito-create-auth.ts")
+      entry: path.join(repoRoot, "backend/src/cognito-create-auth.ts"),
+      environment: {
+        ARKESEL_API_KEY: arkeselApiKey,
+        ARKESEL_SENDER_ID: arkeselSenderId,
+        ARKESEL_SMS_API_URL: arkeselSmsApiUrl,
+        OTP_SMS_TEMPLATE: otpSmsTemplate
+      }
     });
 
     const verifyAuthChallenge = this.createNodeFunction("VerifyAuthChallengeFn", {
       entry: path.join(repoRoot, "backend/src/cognito-verify-auth.ts")
     });
 
-    createAuthChallenge.addToRolePolicy(
-      new PolicyStatement({
-        actions: ["sns:Publish"],
-        resources: ["*"]
-      })
-    );
-
     const userPool = new UserPool(this, "UserPool", {
       selfSignUpEnabled: false,
       signInAliases: {
-        phone: true
+        phone: true,
+        email: true
       },
       autoVerify: {
         phone: true
@@ -139,7 +146,9 @@ export class RoomXchangeStack extends Stack {
     const userPoolClient = new UserPoolClient(this, "UserPoolClient", {
       userPool,
       authFlows: {
-        custom: true
+        custom: true,
+        userPassword: true,
+        adminUserPassword: true
       }
     });
 
@@ -189,7 +198,8 @@ export class RoomXchangeStack extends Stack {
           "cognito-idp:AdminInitiateAuth",
           "cognito-idp:AdminRespondToAuthChallenge",
           "cognito-idp:AdminSetUserPassword",
-          "cognito-idp:AdminUpdateUserAttributes"
+          "cognito-idp:AdminUpdateUserAttributes",
+          "cognito-idp:ListUsers"
         ],
         resources: [userPool.userPoolArn]
       })

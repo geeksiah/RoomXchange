@@ -32,7 +32,7 @@ export default function SignupScreen() {
           <View className="mt-10">
             <Text className="font-jakarta-bold text-4xl text-rx-text">Create account</Text>
             <Text className="mt-3 max-w-[320px] font-jakarta text-sm leading-6 text-rx-muted">
-              Set up your RoomXchange account with your phone number and one-time code.
+              Create your account with email, phone, and password. We will verify your phone number once.
             </Text>
           </View>
 

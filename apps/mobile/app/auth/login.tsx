@@ -32,7 +32,7 @@ export default function LoginScreen() {
           <View className="mt-10">
             <Text className="font-jakarta-bold text-4xl text-rx-text">Login</Text>
             <Text className="mt-3 max-w-[300px] font-jakarta text-sm leading-6 text-rx-muted">
-              Continue with your phone number. We will send a one-time code to verify the account.
+              Sign in with your email or phone number and password.
             </Text>
           </View>
 
@@ -44,6 +44,13 @@ export default function LoginScreen() {
             <Text className="font-jakarta text-sm text-rx-muted">New here?</Text>
             <ScaleButton onPress={() => router.push("/auth/signup")} className="ml-2 rounded-full px-1 py-1">
               <Text className="font-jakarta-bold text-sm text-rx-accent">Create account</Text>
+            </ScaleButton>
+          </View>
+
+          <View className="mt-3 flex-row items-center justify-center">
+            <Text className="font-jakarta text-sm text-rx-muted">Forgot your password?</Text>
+            <ScaleButton onPress={() => router.push("/auth/forgot-password" as any)} className="ml-2 rounded-full px-1 py-1">
+              <Text className="font-jakarta-bold text-sm text-rx-accent">Reset it</Text>
             </ScaleButton>
           </View>
         </View>

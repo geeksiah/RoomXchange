@@ -9,30 +9,25 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { Avatar } from "../../src/components/avatar";
 import { ScaleButton } from "../../src/components/scale-button";
-import { isDemoSession } from "../../src/demo-data";
 import { useSession } from "../../src/session-provider";
-import { useDemoStore } from "../../src/stores/demo-store";
 import { useNotificationStore } from "../../src/stores/notification-store";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { session, api, refreshProfile, logout } = useSession();
   const queryClient = useQueryClient();
-  const demoListingsState = useDemoStore((state) => state.listings);
-  const demoPhoneVisibility = useDemoStore((state) => (session && isDemoSession(session) ? state.getPhoneVisibility(session.user.userId) : false));
-  const updatePhoneVisibility = useDemoStore((state) => state.updatePhoneVisibility);
   const reminders = useNotificationStore((state) => state.reminders);
   const [name, setName] = useState(session?.user.name ?? "");
   const [email, setEmail] = useState(session?.user.email ?? "");
   const [avatar, setAvatar] = useState(session?.user.avatar ?? "");
-  const [phonePublic, setPhonePublic] = useState(session?.user.phonePublic ?? demoPhoneVisibility);
+  const [phonePublic, setPhonePublic] = useState(session?.user.phonePublic ?? false);
 
   useEffect(() => {
     setName(session?.user.name ?? "");
     setEmail(session?.user.email ?? "");
     setAvatar(session?.user.avatar ?? "");
-    setPhonePublic(session?.user.phonePublic ?? (session && isDemoSession(session) ? demoPhoneVisibility : false));
-  }, [demoPhoneVisibility, session, session?.user.avatar, session?.user.email, session?.user.name, session?.user.phonePublic]);
+    setPhonePublic(session?.user.phonePublic ?? false);
+  }, [session, session?.user.avatar, session?.user.email, session?.user.name, session?.user.phonePublic]);
 
   const reportsQuery = useQuery({
     queryKey: ["my-reports"],
@@ -40,24 +35,22 @@ export default function ProfileScreen() {
     enabled: Boolean(session)
   });
 
+  const listingsQuery = useQuery({
+    queryKey: ["my-listings", session?.user.userId],
+    queryFn: () => api.getUserListings(session!.user.userId),
+    enabled: Boolean(session?.user.userId)
+  });
+
   const profileListings = useMemo(() => {
     if (!session) {
       return [];
     }
-
-    if (isDemoSession(session)) {
-      return demoListingsState.filter((listing) => listing.ownerId === session.user.userId);
-    }
-
-    return [];
-  }, [demoListingsState, session]);
+    return listingsQuery.data ?? [];
+  }, [listingsQuery.data, session]);
 
   const updateProfileMutation = useMutation({
     mutationFn: () => api.updateProfile({ name, email, avatar, phonePublic }),
     onSuccess: async () => {
-      if (session && isDemoSession(session)) {
-        updatePhoneVisibility(session.user.userId, phonePublic);
-      }
       await refreshProfile();
       await queryClient.invalidateQueries({ queryKey: ["my-listings"] });
     }
@@ -85,11 +78,6 @@ export default function ProfileScreen() {
       compress: 0.82,
       format: SaveFormat.JPEG
     });
-
-    if (isDemoSession(session)) {
-      setAvatar(compressed.uri);
-      return;
-    }
 
     const upload = await api.createUpload({
       fileName: asset.fileName ?? `roomxchange-profile-${Date.now()}.jpg`,

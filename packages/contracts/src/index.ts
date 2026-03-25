@@ -26,6 +26,7 @@ export const phoneSchema = z
   .regex(/^(\+[1-9]\d{7,14}|233\d{9}|0\d{9})$/, "Enter a valid phone number.");
 
 export const emailSchema = z.string().trim().email();
+export const passwordSchema = z.string().min(8).max(128);
 
 const optionalEmailSchema = z.preprocess((value) => {
   if (typeof value === "string" && value.trim() === "") {
@@ -62,7 +63,41 @@ export const otpRequestSchema = z.object({
 
 export const adminLoginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(8).max(128)
+  password: passwordSchema
+});
+
+export const authLoginSchema = z.object({
+  identifier: z.string().trim().min(3).max(160),
+  password: passwordSchema
+});
+
+export const authSignupRequestSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  email: emailSchema,
+  phone: phoneSchema,
+  password: passwordSchema
+});
+
+export const authSignupVerifySchema = z.object({
+  phone: phoneSchema,
+  session: z.string().trim().min(8),
+  code: z.string().trim().regex(/^\d{4,8}$/)
+});
+
+export const authPasswordResetRequestSchema = z.object({
+  identifier: z.string().trim().min(3).max(160)
+});
+
+export const authPasswordResetVerifySchema = z.object({
+  identifier: z.string().trim().min(3).max(160),
+  session: z.string().trim().min(8),
+  code: z.string().trim().regex(/^\d{4,8}$/),
+  newPassword: passwordSchema
+});
+
+export const authChallengeResponseSchema = z.object({
+  session: z.string(),
+  destination: z.string()
 });
 
 export const otpVerifySchema = z.object({
@@ -279,16 +314,6 @@ export const authSessionSchema = z.object({
   tokens: authTokensSchema
 });
 
-export const devBootstrapInputSchema = z.object({
-  signIn: z.boolean().default(false)
-});
-
-export const devBootstrapResponseSchema = z.object({
-  session: authSessionSchema.nullable(),
-  listingsCount: z.number().int().nonnegative(),
-  testUserPhone: phoneSchema
-});
-
 export const feedResponseSchema = z.object({
   items: z.array(listingSummarySchema),
   nextCursor: z.string().nullable()
@@ -479,6 +504,12 @@ export const realtimeEventSchema = z.discriminatedUnion("type", [
 export type OtpRequestInput = z.infer<typeof otpRequestSchema>;
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
 export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
+export type AuthLoginInput = z.infer<typeof authLoginSchema>;
+export type AuthSignupRequestInput = z.infer<typeof authSignupRequestSchema>;
+export type AuthSignupVerifyInput = z.infer<typeof authSignupVerifySchema>;
+export type AuthPasswordResetRequestInput = z.infer<typeof authPasswordResetRequestSchema>;
+export type AuthPasswordResetVerifyInput = z.infer<typeof authPasswordResetVerifySchema>;
+export type AuthChallengeResponse = z.infer<typeof authChallengeResponseSchema>;
 export type ListingInput = z.infer<typeof listingInputSchema>;
 export type ListingUpdateInput = z.infer<typeof listingUpdateSchema>;
 export type FeedQueryInput = z.infer<typeof feedQuerySchema>;
@@ -498,8 +529,6 @@ export type UserProfile = z.infer<typeof userProfileSchema>;
 export type AdminAnalytics = z.infer<typeof adminAnalyticsSchema>;
 export type AdminConversation = z.infer<typeof adminConversationSchema>;
 export type AuthSession = z.infer<typeof authSessionSchema>;
-export type DevBootstrapInput = z.infer<typeof devBootstrapInputSchema>;
-export type DevBootstrapResponse = z.infer<typeof devBootstrapResponseSchema>;
 export type UploadPresignResponse = z.infer<typeof uploadPresignResponseSchema>;
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 export type CheckoutLinkResponse = z.infer<typeof checkoutLinkResponseSchema>;

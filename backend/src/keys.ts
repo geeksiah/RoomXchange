@@ -11,6 +11,8 @@ export const tableKeys = {
   userReport: (userId: string, reportId: string) => ({ PK: `USER#${userId}`, SK: `REPORT#${reportId}` }),
   userNotification: (userId: string, notificationId: string) => ({ PK: `USER#${userId}`, SK: `NOTIFICATION#${notificationId}` }),
   userReminder: (userId: string, reminderId: string) => ({ PK: `USER#${userId}`, SK: `REMINDER#${reminderId}` }),
+  pendingSignup: (sessionId: string) => ({ PK: "AUTH#PENDING_SIGNUP", SK: `SESSION#${sessionId}` }),
+  pendingPasswordReset: (sessionId: string) => ({ PK: "AUTH#PASSWORD_RESET", SK: `SESSION#${sessionId}` }),
   conversation: (conversationId: string) => ({ PK: `CONVERSATION#${conversationId}`, SK: "META" }),
   conversationMessage: (conversationId: string, createdAt: string, messageId: string) => ({
     PK: `CONVERSATION#${conversationId}`,

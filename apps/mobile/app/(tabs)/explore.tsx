@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Animated, Easing, FlatList, PanResponder, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -22,13 +22,11 @@ export default function ExploreScreen() {
   const mapRef = useRef<MapView | null>(null);
   const { height } = useWindowDimensions();
   const { api } = useSession();
-  const queryClient = useQueryClient();
   const unreadNotifications = useNotificationStore((state) => state.unreadCount);
   const { query, setQuery, getActiveFilterCount, toFeedQuery } = useSearchStore();
   const [mode, setMode] = useState<"browse" | "map">("browse");
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
-  const [attemptedDemoSeed, setAttemptedDemoSeed] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const feedFilters = toFeedQuery();
   const activeFilterCount = getActiveFilterCount();
@@ -77,16 +75,6 @@ export default function ExploreScreen() {
     queryFn: () => api.getFeed({ limit: 24, ...feedFilters })
   });
 
-  const bootstrapMutation = useMutation({
-    mutationFn: () => api.bootstrapDemo({ signIn: false }),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["home-feed"] }),
-        queryClient.invalidateQueries({ queryKey: ["explore-feed"] })
-      ]);
-    }
-  });
-
   const listings = feedQuery.data?.items ?? [];
   const selectedListing = useMemo(
     () => listings.find((item) => item.listingId === selectedListingId) ?? listings[0] ?? null,
@@ -118,15 +106,6 @@ export default function ExploreScreen() {
       );
     }
   }, [selectedListing]);
-
-  useEffect(() => {
-    if (!__DEV__ || attemptedDemoSeed || !feedQuery.data || feedQuery.data.items.length > 0 || feedQuery.isLoading) {
-      return;
-    }
-
-    setAttemptedDemoSeed(true);
-    bootstrapMutation.mutate();
-  }, [attemptedDemoSeed, bootstrapMutation, feedQuery.data, feedQuery.isLoading]);
 
   return (
     <SafeAreaView className="flex-1 bg-rx-background" edges={["top"]}>

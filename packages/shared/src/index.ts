@@ -1,14 +1,18 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import {
   adminLoginSchema,
+  authChallengeResponseSchema,
+  authLoginSchema,
+  authPasswordResetRequestSchema,
+  authPasswordResetVerifySchema,
+  authSignupRequestSchema,
+  authSignupVerifySchema,
   adminAnalyticsSchema,
   adminConversationSchema,
   adminSubscriptionUpdateSchema,
   adminUserUpdateSchema,
   authSessionSchema,
   checkoutLinkResponseSchema,
-  devBootstrapInputSchema,
-  devBootstrapResponseSchema,
   conversationListResponseSchema,
   conversationMutationResultSchema,
   conversationMessageListQuerySchema,
@@ -41,6 +45,12 @@ import {
   uploadPresignSchema,
   userProfileSchema,
   type AuthSession,
+  type AuthChallengeResponse,
+  type AuthLoginInput,
+  type AuthPasswordResetRequestInput,
+  type AuthPasswordResetVerifyInput,
+  type AuthSignupRequestInput,
+  type AuthSignupVerifyInput,
   type AdminLoginInput,
   type AdminAnalytics,
   type AdminConversation,
@@ -54,8 +64,6 @@ import {
   type ConversationMutationResult,
   type ConversationSummary,
   type DeleteConversationMessagesInput,
-  type DevBootstrapInput,
-  type DevBootstrapResponse,
   type FeedQueryInput,
   type FeedResponse,
   type Listing,
@@ -309,6 +317,31 @@ async function request<T>(
 }
 
 export function createApiClient(options: ApiClientOptions = {}) {
+  const login = async (input: AuthLoginInput) => {
+    authLoginSchema.parse(input);
+    return request("/auth/login", authSessionSchema, { method: "POST", body: input }, options);
+  };
+
+  const requestSignup = async (input: AuthSignupRequestInput) => {
+    authSignupRequestSchema.parse(input);
+    return request("/auth/signup/request", authChallengeResponseSchema, { method: "POST", body: input }, options);
+  };
+
+  const verifySignup = async (input: AuthSignupVerifyInput) => {
+    authSignupVerifySchema.parse(input);
+    return request("/auth/signup/verify", conversationMutationResultSchema, { method: "POST", body: input }, options);
+  };
+
+  const requestPasswordReset = async (input: AuthPasswordResetRequestInput) => {
+    authPasswordResetRequestSchema.parse(input);
+    return request("/auth/password-reset/request", authChallengeResponseSchema, { method: "POST", body: input }, options);
+  };
+
+  const verifyPasswordReset = async (input: AuthPasswordResetVerifyInput) => {
+    authPasswordResetVerifySchema.parse(input);
+    return request("/auth/password-reset/verify", conversationMutationResultSchema, { method: "POST", body: input }, options);
+  };
+
   const requestOtp = async (input: OtpRequestInput) => {
     otpRequestSchema.parse(input);
     return request(
@@ -324,11 +357,12 @@ export function createApiClient(options: ApiClientOptions = {}) {
       adminLoginSchema.parse(input);
       return request("/admin/auth/login", authSessionSchema, { method: "POST", body: input }, options);
     },
+    login,
+    requestSignup,
+    verifySignup,
+    requestPasswordReset,
+    verifyPasswordReset,
     requestOtp,
-    bootstrapDemo(input: DevBootstrapInput = { signIn: false }) {
-      const parsed = devBootstrapInputSchema.parse(input);
-      return request("/dev/bootstrap", devBootstrapResponseSchema, { method: "POST", body: parsed }, options);
-    },
     requestOtpChallenge(input: OtpRequestInput) {
       return requestOtp(input);
     },
@@ -542,6 +576,12 @@ export function parseRealtimeEvent(value: unknown): RealtimeEvent {
 
 export type {
   AdminLoginInput,
+  AuthChallengeResponse,
+  AuthLoginInput,
+  AuthPasswordResetRequestInput,
+  AuthPasswordResetVerifyInput,
+  AuthSignupRequestInput,
+  AuthSignupVerifyInput,
   AuthSession,
   AdminConversation,
   AdminSubscriptionUpdateInput,
@@ -551,8 +591,6 @@ export type {
   ConversationMessageListQuery,
   ConversationMessageListResponse,
   ConversationSummary,
-  DevBootstrapInput,
-  DevBootstrapResponse,
   FeedQueryInput,
   FeedResponse,
   Listing,

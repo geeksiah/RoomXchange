@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { FlatList, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar } from "../../src/components/avatar";
@@ -17,36 +17,18 @@ export default function HomeScreen() {
   const router = useRouter();
   const listRef = useRef<FlatList<any>>(null);
   const { api, session } = useSession();
-  const queryClient = useQueryClient();
   const unreadNotifications = useNotificationStore((state) => state.unreadCount);
   const { locationLabel, query, setQuery, getActiveFilterCount, toFeedQuery } = useSearchStore();
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const feedFilters = toFeedQuery();
   const queryKey = useMemo(() => ["home-feed", feedFilters], [feedFilters]);
-  const attemptedDemoSeed = useRef(false);
   const activeFilterCount = getActiveFilterCount();
 
   const feedQuery = useQuery({
     queryKey,
     queryFn: () => api.getFeed({ limit: 12, ...feedFilters })
   });
-
-  const bootstrapMutation = useMutation({
-    mutationFn: (signIn: boolean) => api.bootstrapDemo({ signIn }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["home-feed"] });
-    }
-  });
-
-  useEffect(() => {
-    if (!__DEV__ || attemptedDemoSeed.current || !feedQuery.data || feedQuery.isLoading || feedQuery.data.items.length > 0) {
-      return;
-    }
-
-    attemptedDemoSeed.current = true;
-    bootstrapMutation.mutate(false);
-  }, [bootstrapMutation, feedQuery.data, feedQuery.isLoading]);
 
   return (
     <SafeAreaView className="flex-1 bg-rx-background" edges={["top"]}>
@@ -111,9 +93,7 @@ export default function HomeScreen() {
               <Text className="font-jakarta text-base text-rx-muted">
                 {feedQuery.isLoading
                   ? "Loading homes for you..."
-                  : bootstrapMutation.isPending
-                    ? "Preparing homes for you..."
-                    : "No homes match the current filters."}
+                  : "No homes match the current filters."}
               </Text>
             </View>
           }

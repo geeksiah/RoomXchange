@@ -8,15 +8,12 @@ import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { BackIconButton } from "../../src/components/back-icon-button";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { ScaleButton } from "../../src/components/scale-button";
-import { isDemoSession } from "../../src/demo-data";
 import { useSession } from "../../src/session-provider";
-import { useDemoStore } from "../../src/stores/demo-store";
 
 export default function ProfileListingsScreen() {
   const router = useRouter();
   const { session, api } = useSession();
   const queryClient = useQueryClient();
-  const demoListingsState = useDemoStore((state) => state.listings);
   const [listingSearch, setListingSearch] = useState("");
   const [listingStatus, setListingStatus] = useState<"all" | "published" | "archived">("all");
 
@@ -55,30 +52,14 @@ export default function ProfileListingsScreen() {
   });
 
   const sourceListings = useMemo<Array<{ listingId: string; title: string; location: string; price: number; status: "published" | "archived" }>>(() => {
-    if (!session) {
-      return [];
-    }
-
-    if (isDemoSession(session)) {
-      return demoListingsState
-        .filter((listing) => listing.ownerId === session.user.userId)
-        .map((listing) => ({
-          listingId: listing.listingId,
-          title: listing.title,
-          location: listing.location,
-          price: listing.price,
-          status: listing.status === "archived" ? "archived" : "published"
-        }));
-    }
-
     return (listingsQuery.data ?? []).map((listing) => ({
       listingId: listing.listingId,
       title: listing.title,
       location: listing.location,
       price: listing.price,
-      status: "published" as const
+      status: "published"
     }));
-  }, [demoListingsState, listingsQuery.data, session]);
+  }, [listingsQuery.data]);
 
   const filteredListings = useMemo(
     () =>

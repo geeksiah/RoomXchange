@@ -10,9 +10,7 @@ import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view"
 import { PropertyCard } from "../../src/components/property-card";
 import { ScaleButton } from "../../src/components/scale-button";
 import { openPhoneCall, openWhatsApp } from "../../src/lib/contact-actions";
-import { demoUserDirectory, isDemoSession } from "../../src/demo-data";
 import { useSession } from "../../src/session-provider";
-import { useDemoStore } from "../../src/stores/demo-store";
 
 export default function PublisherProfileScreen() {
   const params = useLocalSearchParams<{
@@ -26,8 +24,6 @@ export default function PublisherProfileScreen() {
   const { api, session } = useSession();
   const [reportVisible, setReportVisible] = useState(false);
   const [reason, setReason] = useState("");
-  const demoProfile = useDemoStore((state) => state.profile);
-  const publicPhoneByUserId = useDemoStore((state) => state.publicPhoneByUserId);
 
   const listingsQuery = useQuery({
     queryKey: ["publisher-listings", params.userId],
@@ -49,31 +45,12 @@ export default function PublisherProfileScreen() {
   });
 
   const publisher = useMemo(() => {
-    if (session && isDemoSession(session)) {
-      if (params.userId === demoProfile.userId) {
-        return {
-          name: demoProfile.name,
-          avatar: demoProfile.avatar,
-          phone: publicPhoneByUserId[params.userId] ? demoProfile.phone : null
-        };
-      }
-
-      const entry = demoUserDirectory[params.userId as keyof typeof demoUserDirectory];
-      if (entry) {
-        return {
-          name: entry.name,
-          avatar: entry.avatar,
-          phone: publicPhoneByUserId[params.userId] ? entry.phone : null
-        };
-      }
-    }
-
     return {
       name: params.name ?? "Publisher",
       avatar: params.avatar ?? null,
       phone: params.phone ?? null
     };
-  }, [demoProfile.avatar, demoProfile.name, demoProfile.phone, demoProfile.userId, params.avatar, params.name, params.phone, params.userId, publicPhoneByUserId, session]);
+  }, [params.avatar, params.name, params.phone]);
 
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
