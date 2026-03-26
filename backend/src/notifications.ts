@@ -23,6 +23,9 @@ function getDefaultNotificationSettings() {
     pushEnabled: true,
     messageNotificationsEnabled: true,
     listingMatchNotificationsEnabled: true,
+    donationProvider: "Paystack",
+    donationUrl: null,
+    donationPresetAmounts: [50, 100, 200, 500, 1000],
     updatedAt: new Date().toISOString()
   };
 }

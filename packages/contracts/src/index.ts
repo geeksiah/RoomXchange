@@ -42,12 +42,32 @@ const optionalUrlSchema = z.preprocess((value) => {
   return value;
 }, z.string().url().optional());
 
+const nullableUrlSchema = z.preprocess((value) => {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === "string" && value.trim() === "") {
+    return null;
+  }
+  return value;
+}, z.string().url().nullable().optional());
+
 const optionalStringSchema = z.preprocess((value) => {
   if (typeof value === "string" && value.trim() === "") {
     return undefined;
   }
   return value;
 }, z.string().trim().min(1).optional());
+
+const nullableStringSchema = z.preprocess((value) => {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === "string" && value.trim() === "") {
+    return null;
+  }
+  return value;
+}, z.string().trim().min(1).nullable().optional());
 
 const optionalNameSchema = optionalStringSchema.pipe(z.string().trim().min(2).max(80).optional());
 
@@ -415,6 +435,9 @@ export const notificationSettingsSchema = z.object({
   pushEnabled: z.boolean(),
   messageNotificationsEnabled: z.boolean(),
   listingMatchNotificationsEnabled: z.boolean(),
+  donationProvider: nullableStringSchema.pipe(z.string().trim().min(2).max(40).nullable().optional()).default("Paystack"),
+  donationUrl: nullableUrlSchema.default(null),
+  donationPresetAmounts: z.array(z.number().int().positive().max(100000)).min(1).max(5).default([50, 100, 200, 500, 1000]),
   updatedAt: z.string()
 });
 

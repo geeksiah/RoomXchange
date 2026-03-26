@@ -97,6 +97,9 @@ function getDefaultNotificationSettings(): NotificationSettings {
     pushEnabled: true,
     messageNotificationsEnabled: true,
     listingMatchNotificationsEnabled: true,
+    donationProvider: "Paystack",
+    donationUrl: null,
+    donationPresetAmounts: [50, 100, 200, 500, 1000],
     updatedAt: new Date().toISOString()
   };
 }
@@ -560,6 +563,9 @@ export async function updateAdminNotificationSettings(adminId: string, input: un
     pushEnabled: parsed.pushEnabled ?? current.pushEnabled,
     messageNotificationsEnabled: parsed.messageNotificationsEnabled ?? current.messageNotificationsEnabled,
     listingMatchNotificationsEnabled: parsed.listingMatchNotificationsEnabled ?? current.listingMatchNotificationsEnabled,
+    donationProvider: parsed.donationProvider === undefined ? current.donationProvider : parsed.donationProvider,
+    donationUrl: parsed.donationUrl === undefined ? current.donationUrl : parsed.donationUrl,
+    donationPresetAmounts: parsed.donationPresetAmounts ?? current.donationPresetAmounts,
     updatedAt
   };
 

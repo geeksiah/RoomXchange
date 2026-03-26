@@ -130,6 +130,9 @@ export type NotificationSettingsItem = {
   pushEnabled: boolean;
   messageNotificationsEnabled: boolean;
   listingMatchNotificationsEnabled: boolean;
+  donationProvider: string | null;
+  donationUrl: string | null;
+  donationPresetAmounts: number[];
   updatedAt: string;
 };
 

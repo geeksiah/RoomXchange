@@ -6,15 +6,24 @@
   "build": {
     "development": {
       "environment": "development",
+      "env": {
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
+      },
       "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
       "environment": "preview",
+      "env": {
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
+      },
       "distribution": "internal"
     },
     "apk": {
       "environment": "production",
+      "env": {
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
+      },
       "distribution": "internal",
       "android": {
         "buildType": "apk"
@@ -22,6 +31,9 @@
     },
     "production": {
       "environment": "production",
+      "env": {
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
+      },
       "autoIncrement": true
     }
   }

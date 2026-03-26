@@ -1,0 +1,17 @@
+.git
+.github
+.netlify
+.next
+coverage
+dist
+tmp
+docs
+infra/cdk/cdk.out
+apps/web/.next
+apps/web/out
+apps/mobile/.expo
+apps/mobile/android/.gradle
+apps/mobile/android/app/build
+apps/mobile/ios/build
+backend/dist
+*.log

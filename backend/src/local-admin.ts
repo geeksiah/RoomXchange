@@ -182,6 +182,9 @@ const localState: {
     pushEnabled: true,
     messageNotificationsEnabled: true,
     listingMatchNotificationsEnabled: true,
+    donationProvider: "Paystack",
+    donationUrl: "https://paystack.com/pay/roomxchange-support",
+    donationPresetAmounts: [50, 100, 200, 500, 1000],
     updatedAt: "2026-03-24T08:00:00.000Z"
   }
 };
