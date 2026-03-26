@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BackIconButton } from "../src/components/back-icon-button";
 import { ScreenHeader } from "../src/components/screen-header";
 import { ScaleButton } from "../src/components/scale-button";
-import { formatConversationTimestamp } from "@roomxchange/shared";
+import { formatConversationTimestamp } from "@roomxchange/shared/src/mobile";
 import { useSession } from "../src/session-provider";
 import { useNotificationStore } from "../src/stores/notification-store";
 

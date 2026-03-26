@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import { Ionicons } from "@expo/vector-icons";
-import { formatConversationTimestamp, type ConversationSummary } from "@roomxchange/shared";
+import { formatConversationTimestamp, type ConversationSummary } from "@roomxchange/shared/src/mobile";
 import { Avatar } from "./avatar";
 import { ScaleButton } from "./scale-button";
 

@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { createApiClient, type AuthSession } from "@roomxchange/shared";
+import { createMobileApiClient, type AuthSession } from "@roomxchange/shared/src/mobile-client";
 
 type SessionContextValue = {
   session: AuthSession | null;
@@ -29,7 +29,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const remoteApi = useMemo(
     () =>
-      createApiClient({
+      createMobileApiClient({
         getAccessToken: () => session?.tokens.accessToken ?? null
       }),
     [session?.tokens.accessToken]

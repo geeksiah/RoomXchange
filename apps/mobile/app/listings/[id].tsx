@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, FlatList, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { formatAmenityLabel, formatMonthlyPrice } from "@roomxchange/shared";
+import { formatAmenityLabel, formatMonthlyPrice } from "@roomxchange/shared/src/mobile";
 import { Avatar } from "../../src/components/avatar";
 import { BackIconButton } from "../../src/components/back-icon-button";
 import { ScaleButton } from "../../src/components/scale-button";

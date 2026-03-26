@@ -16,7 +16,7 @@ import {
   formatListingSubtypeLabel,
   formatMonthlyPrice,
   roomXchangeConfig
-} from "@roomxchange/shared";
+} from "@roomxchange/shared/src/mobile";
 import { searchGhanaLocations } from "../ghana-locations";
 import { DismissKeyboardView } from "./dismiss-keyboard-view";
 import { ScaleButton } from "./scale-button";

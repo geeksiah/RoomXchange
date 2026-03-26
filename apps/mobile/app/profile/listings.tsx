@@ -3,7 +3,7 @@ import { Alert, ScrollView, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { formatMonthlyPrice } from "@roomxchange/shared";
+import { formatMonthlyPrice } from "@roomxchange/shared/src/mobile";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { BackIconButton } from "../../src/components/back-icon-button";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Animated, Easing, Modal, PanResponder, Pressable, ScrollView, Switch, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { BlurView } from "expo-blur";
-import { formatListingSubtypeLabel } from "@roomxchange/shared";
+import { formatListingSubtypeLabel } from "@roomxchange/shared/src/mobile";
 import { PriceRangeSlider } from "./price-range-slider";
 import { ScaleButton } from "./scale-button";
 import { useSearchStore } from "../stores/search-store";

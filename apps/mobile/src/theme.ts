@@ -1,4 +1,4 @@
-import { designTokens } from "@roomxchange/shared";
+import { designTokens } from "@roomxchange/shared/src/mobile";
 
 export const theme = {
   colors: designTokens.colors,

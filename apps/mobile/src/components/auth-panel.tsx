@@ -14,7 +14,7 @@ import {
   type AuthSignupRequestInput,
   type AuthSignupVerifyInput
 } from "@roomxchange/contracts";
-import { sanitizePhone } from "@roomxchange/shared";
+import { sanitizePhone } from "@roomxchange/shared/src/mobile";
 import { useSession } from "../session-provider";
 import { ScaleButton } from "./scale-button";
 

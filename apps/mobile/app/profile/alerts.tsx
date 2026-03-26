@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { formatListingSubtypeLabel } from "@roomxchange/shared";
+import { formatListingSubtypeLabel } from "@roomxchange/shared/src/mobile";
 import { BackIconButton } from "../../src/components/back-icon-button";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { PriceRangeSlider } from "../../src/components/price-range-slider";

@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { Image } from "expo-image";
-import { getInitials } from "@roomxchange/shared";
+import { getInitials } from "@roomxchange/shared/src/mobile";
 
 type AvatarProps = {
   name: string;

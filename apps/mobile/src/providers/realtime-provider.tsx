@@ -6,7 +6,7 @@ import {
   parseRealtimeEvent,
   type ConversationListResponse,
   type ConversationMessageListResponse
-} from "@roomxchange/shared";
+} from "@roomxchange/shared/src/mobile-client";
 import { useSession } from "../session-provider";
 import { useChatStore } from "../stores/chat-store";
 import { useNotificationStore } from "../stores/notification-store";

@@ -1,5 +1,5 @@
 import { Linking } from "react-native";
-import { sanitizePhone } from "@roomxchange/shared";
+import { sanitizePhone } from "@roomxchange/shared/src/mobile";
 
 function toDialablePhone(phone: string) {
   return sanitizePhone(phone).replace(/\s+/g, "");

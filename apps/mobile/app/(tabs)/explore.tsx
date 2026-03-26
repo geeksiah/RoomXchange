@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import MapView, { Marker } from "react-native-maps";
-import { formatMonthlyPrice, type ListingSummary } from "@roomxchange/shared";
+import { formatMonthlyPrice, type ListingSummary } from "@roomxchange/shared/src/mobile";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { FilterSheet } from "../../src/components/filter-sheet";
 import { PropertyCard } from "../../src/components/property-card";

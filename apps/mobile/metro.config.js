@@ -1,5 +1,17 @@
+const path = require("path");
+const Module = require("module");
+
+process.env.NODE_PATH = [
+  path.resolve(__dirname, "node_modules"),
+  path.resolve(__dirname, "../../node_modules"),
+  process.env.NODE_PATH ?? ""
+]
+  .filter(Boolean)
+  .join(path.delimiter);
+Module._initPaths();
+
 const { getDefaultConfig } = require("expo/metro-config");
-const { withNativeWind } = require("./node_modules/nativewind/dist/metro/index.js");
+const { withNativeWind } = require("nativewind/metro");
 
 const config = getDefaultConfig(__dirname);
 

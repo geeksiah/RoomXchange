@@ -1,4 +1,8 @@
 import type { ExpoConfig } from "expo/config";
+import { existsSync } from "node:fs";
+
+const googleServicesFile = process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json";
+const androidGoogleServicesFile = process.env.GOOGLE_SERVICES_JSON || existsSync(googleServicesFile) ? googleServicesFile : undefined;
 
 const config: ExpoConfig = {
   name: "RoomXchange",
@@ -21,15 +25,14 @@ const config: ExpoConfig = {
   },
   android: {
     package: "com.roomxchange.mobile",
-    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
+    googleServicesFile: androidGoogleServicesFile,
     adaptiveIcon: {
       foregroundImage: "./src/assets/icon.png",
       backgroundColor: "#FCFCFA"
     }
   },
   experiments: {
-    typedRoutes: true,
-    autolinkingModuleResolution: true
+    typedRoutes: true
   },
   plugins: ["expo-router", "expo-notifications", "expo-secure-store"],
   extra: {

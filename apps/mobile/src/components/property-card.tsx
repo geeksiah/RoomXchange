@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { Image } from "expo-image";
-import { formatMonthlyPrice, type ListingSummary } from "@roomxchange/shared";
+import { formatMonthlyPrice, type ListingSummary } from "@roomxchange/shared/src/mobile";
 import { theme } from "../theme";
 import { ScaleButton } from "./scale-button";
 
