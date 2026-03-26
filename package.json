@@ -21,6 +21,7 @@
     "cdk:deploy": "npm run deploy --workspace @roomxchange/cdk"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.15.9",
     "@types/node": "^22.10.1",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",

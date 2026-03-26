@@ -5,3 +5,6 @@ publish = "apps/web/.next"
 
 [build.environment]
 SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_ROOMXCHANGE_API_URL,NEXT_PUBLIC_ROOMXCHANGE_MEDIA_URL,NEXT_PUBLIC_ROOMXCHANGE_SOCKET_URL,NEXT_PUBLIC_ROOMXCHANGE_WEB_URL"
+
+[[plugins]]
+package = "@netlify/plugin-nextjs"
