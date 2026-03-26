@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import {
@@ -87,7 +87,7 @@ function SocialRow() {
   );
 }
 
-export default function HomePage() {
+function LandingPageContent() {
   const searchParams = useSearchParams();
   const playStoreUrl = (process.env.NEXT_PUBLIC_ROOMXCHANGE_PLAYSTORE_URL ?? "").trim() || null;
   const appStoreUrl = (process.env.NEXT_PUBLIC_ROOMXCHANGE_APPSTORE_URL ?? "").trim() || null;
@@ -400,5 +400,33 @@ export default function HomePage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function LandingPageFallback() {
+  return (
+    <main className="landing-fullpage">
+      <section className="landing-section landing-hero-section">
+        <div className="landing-hero-backdrop" />
+        <div className="landing-hero-shell shell" style={{ justifyItems: "start" }}>
+          <div className="landing-hero-copy" style={{ paddingTop: 120 }}>
+            <h1>
+              Find rooms.
+              <br />
+              No agent fees.
+            </h1>
+            <p>Loading RoomXchange...</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<LandingPageFallback />}>
+      <LandingPageContent />
+    </Suspense>
   );
 }
