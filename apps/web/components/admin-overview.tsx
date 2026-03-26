@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import type { Route } from "next";
-import { useQuery } from "@tanstack/react-query";
 import { formatMonthlyPrice } from "@roomxchange/shared";
-import { useSession } from "./session-provider";
+import { useAdminAnalytics, useAdminConversations, useAdminEvents, useAdminListings, useAdminReports, useAdminSubscriptions, useAdminUsers } from "./admin/data";
+import { EmptyState, LoadingState, PageHeader, StatCard, StatusBadge } from "./admin/ui";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -13,243 +13,258 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function buildLine(values: number[], width: number, height: number, padding: number) {
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const range = Math.max(max - min, 1);
-  const step = (width - padding * 2) / Math.max(values.length - 1, 1);
-
-  return values
-    .map((value, index) => {
-      const x = padding + index * step;
-      const y = height - padding - ((value - min) / range) * (height - padding * 2);
-      return `${x},${y}`;
-    })
-    .join(" ");
-}
-
 export function AdminOverview() {
-  const { api, session } = useSession();
-  const enabled = Boolean(session && session.user.role !== "member");
-
-  const analyticsQuery = useQuery({
-    queryKey: ["admin-analytics"],
-    queryFn: () => api.getAdminAnalytics(),
-    enabled
-  });
-
-  const listingsQuery = useQuery({
-    queryKey: ["admin-listings"],
-    queryFn: () => api.getAdminListings(),
-    enabled
-  });
-
-  const reportsQuery = useQuery({
-    queryKey: ["admin-reports"],
-    queryFn: () => api.getAdminReports(),
-    enabled
-  });
-
-  const conversationsQuery = useQuery({
-    queryKey: ["admin-conversations"],
-    queryFn: () => api.getAdminConversations(),
-    enabled
-  });
+  const analyticsQuery = useAdminAnalytics();
+  const usersQuery = useAdminUsers({ limit: 5 });
+  const listingsQuery = useAdminListings({ limit: 5 });
+  const reportsQuery = useAdminReports({ limit: 5 });
+  const conversationsQuery = useAdminConversations({ limit: 5 });
+  const subscriptionsQuery = useAdminSubscriptions({ limit: 20 });
+  const eventsQuery = useAdminEvents({ limit: 5 });
 
   const analytics = analyticsQuery.data;
-  const metricCards = [
-    { label: "Live users", value: analytics?.activeUsers ?? 0, tone: "soft-accent", note: `${analytics?.totalUsers ?? 0} total accounts` },
-    { label: "Published listings", value: analytics?.publishedListings ?? 0, tone: "soft-success", note: `${analytics?.totalListings ?? 0} total listings` },
-    { label: "Open reports", value: analytics?.openReports ?? 0, tone: "soft-warning", note: `${analytics?.reviewingReports ?? 0} under review` },
-    { label: "Admin seats", value: analytics?.totalAdmins ?? 0, tone: "soft-info", note: `${analytics?.frozenUsers ?? 0} frozen users` }
-  ];
+  const users = usersQuery.data?.items ?? [];
+  const listings = listingsQuery.data?.items ?? [];
+  const reports = reportsQuery.data?.items ?? [];
+  const conversations = conversationsQuery.data?.items ?? [];
+  const subscriptions = subscriptionsQuery.data?.items ?? [];
+  const events = eventsQuery.data?.items ?? [];
 
-  const primaryLine = buildLine(
-    [
-      analytics?.activeUsers ?? 0,
-      analytics?.publishedListings ?? 0,
-      analytics?.totalUsers ?? 0,
-      analytics?.openReports ?? 0,
-      analytics?.totalAdmins ?? 0,
-      analytics?.publishedListings ?? 0
-    ],
-    760,
-    260,
-    28
-  );
-
-  const secondaryLine = buildLine(
-    [
-      analytics?.frozenUsers ?? 0,
-      analytics?.archivedListings ?? 0,
-      analytics?.reviewingReports ?? 0,
-      analytics?.removedUsers ?? 0,
-      analytics?.openReports ?? 0,
-      analytics?.activeUsers ?? 0
-    ],
-    760,
-    260,
-    28
-  );
-
-  const recentListings = (listingsQuery.data ?? []).slice(0, 4);
-  const recentReports = (reportsQuery.data ?? []).slice(0, 4);
-  const recentConversations = (conversationsQuery.data ?? []).slice(0, 4);
+  const frozenUsers = users.filter((user) => user.accountStatus === "frozen");
+  const openReports = reports.filter((report) => report.status === "open");
+  const reviewingReports = reports.filter((report) => report.status === "reviewing");
+  const accessRisk = subscriptions.filter((user) => user.subscriptionStatus === "past_due" || user.subscriptionStatus === "expired");
+  const recentListings = listings.slice(0, 5);
+  const recentConversations = conversations.slice(0, 5);
 
   return (
     <section className="admin-workspace">
-      <div className="admin-page-head">
-        <div>
-          <h1>Dashboard</h1>
-          <p>Clear view of users, listings, reports, and activity.</p>
-        </div>
-        <div className="admin-actions">
-          <Link className="button secondary" href={"/dashboard/admin/users" as Route}>
-            Users
-          </Link>
-          <Link className="button" href={"/dashboard/reports" as Route}>
-            Reports
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description="Current system load, moderation pressure, and what needs action now."
+        actions={
+          <>
+            <Link className="button secondary" href={"/dashboard/admin/users" as Route}>
+              Users
+            </Link>
+            <Link className="button" href={"/dashboard/reports" as Route}>
+              Reports
+            </Link>
+          </>
+        }
+      />
 
       <div className="admin-stats">
-        {metricCards.map((card) => (
-          <article key={card.label} className={`admin-stat-card ${card.tone}`}>
-            <span className="admin-stat-label">{card.label}</span>
-            <strong className="admin-stat-value">{card.value}</strong>
-            <span className="muted" style={{ fontSize: "0.88rem" }}>
-              {card.note}
-            </span>
-          </article>
-        ))}
+        <StatCard
+          href="/dashboard/admin/users?status=active"
+          label="Active users"
+          note={`${analytics?.totalUsers ?? 0} total accounts`}
+          tone="accent"
+          value={analytics?.activeUsers ?? 0}
+        />
+        <StatCard
+          href="/dashboard/admin/listings?status=published"
+          label="Published listings"
+          note={`${analytics?.archivedListings ?? 0} archived`}
+          tone="success"
+          value={analytics?.publishedListings ?? 0}
+        />
+        <StatCard
+          href="/dashboard/reports?status=open"
+          label="Open reports"
+          note={`${analytics?.reviewingReports ?? 0} under review`}
+          tone="warning"
+          value={analytics?.openReports ?? 0}
+        />
+        <StatCard
+          href="/dashboard/admin/conversations"
+          label="Active threads"
+          note={`${conversations.length} current threads`}
+          tone="info"
+          value={conversations.length}
+        />
       </div>
 
-      <div className="admin-panels">
+      <div className="admin-two-column">
         <article className="admin-panel">
           <div className="admin-panel-head">
             <div>
-              <h3>Platform pulse</h3>
-              <span className="muted" style={{ fontSize: "0.88rem" }}>
-                Live system mix
-              </span>
+              <h3>Needs attention</h3>
+              <p className="admin-panel-copy">The shortest path to the next admin action.</p>
             </div>
-            <span className="admin-tag">Realtime snapshot</span>
           </div>
-          <div className="admin-chart">
-            <svg viewBox="0 0 760 260" width="100%" height="100%" preserveAspectRatio="none">
-              <line x1="28" y1="224" x2="732" y2="224" stroke="#E5E7EB" strokeWidth="1.2" />
-              <line x1="28" y1="160" x2="732" y2="160" stroke="#F1F5F9" strokeWidth="1" />
-              <line x1="28" y1="96" x2="732" y2="96" stroke="#F1F5F9" strokeWidth="1" />
-              <polyline fill="none" stroke="#FF385C" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" points={primaryLine} />
-              <polyline fill="none" stroke="#27C46A" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" points={secondaryLine} />
-            </svg>
-          </div>
-          <div className="admin-actions" style={{ marginTop: 14 }}>
-            <span className="admin-tag">Core volume</span>
-            <span className="admin-tag">Moderation pressure</span>
-          </div>
+
+          {analyticsQuery.isLoading || usersQuery.isLoading || reportsQuery.isLoading || subscriptionsQuery.isLoading ? (
+            <LoadingState rows={4} />
+          ) : (
+            <div className="admin-stack">
+              <Link className="admin-attention-row" href={"/dashboard/reports?status=open" as Route}>
+                <div>
+                  <strong>Pending reports</strong>
+                  <p>New reports waiting for first review.</p>
+                </div>
+                <StatusBadge value={`${openReports.length} open`} />
+              </Link>
+              <Link className="admin-attention-row" href={"/dashboard/reports?status=reviewing" as Route}>
+                <div>
+                  <strong>Under review</strong>
+                  <p>Cases already in moderation and still unresolved.</p>
+                </div>
+                <StatusBadge value={`${reviewingReports.length} reviewing`} />
+              </Link>
+              <Link className="admin-attention-row" href={"/dashboard/admin/users?status=frozen" as Route}>
+                <div>
+                  <strong>Restricted users</strong>
+                  <p>Accounts currently frozen by moderation.</p>
+                </div>
+                <StatusBadge value={`${frozenUsers.length} frozen`} />
+              </Link>
+              <Link className="admin-attention-row" href={"/dashboard/admin/subscriptions" as Route}>
+                <div>
+                  <strong>Subscription exceptions</strong>
+                  <p>Accounts with past-due or expired access state.</p>
+                </div>
+                <StatusBadge value={`${accessRisk.length} at risk`} />
+              </Link>
+            </div>
+          )}
         </article>
 
         <article className="admin-panel">
           <div className="admin-panel-head">
             <div>
-              <h3>Review queue</h3>
-              <span className="muted" style={{ fontSize: "0.88rem" }}>
-                Latest moderation work
-              </span>
+              <h3>Recent admin actions</h3>
+              <p className="admin-panel-copy">Actual control activity from the admin event log.</p>
             </div>
           </div>
-          <div className="admin-list">
-            {recentReports.length ? (
-              recentReports.map((report) => (
-                <div className="admin-list-row" key={report.reportId}>
+          {eventsQuery.isLoading ? (
+            <LoadingState rows={4} />
+          ) : events.length ? (
+            <div className="admin-stack">
+              {events.map((event) => (
+                <div className="admin-compact-row" key={event.id}>
+                  <div>
+                    <strong>{event.action.replace(/\./g, " ")}</strong>
+                    <p>{formatDate(event.createdAt)}</p>
+                  </div>
+                  <StatusBadge value={event.status ?? event.accountStatus ?? event.subscriptionStatus ?? "logged"} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No admin actions yet" description="The event log will populate when admins change users, listings, reports, subscriptions, or settings." />
+          )}
+        </article>
+      </div>
+
+      <div className="admin-two-column">
+        <article className="admin-panel">
+          <div className="admin-panel-head">
+            <div>
+              <h3>Recent reports</h3>
+              <p className="admin-panel-copy">Fast access to the newest moderation items.</p>
+            </div>
+            <Link className="admin-inline-link" href={"/dashboard/reports" as Route}>
+              Open queue
+            </Link>
+          </div>
+          {reportsQuery.isLoading ? (
+            <LoadingState rows={4} />
+          ) : reports.length ? (
+            <div className="admin-stack">
+              {reports.slice(0, 5).map((report) => (
+                <Link className="admin-compact-row" href={`/dashboard/reports?status=${report.status}` as Route} key={report.reportId}>
                   <div>
                     <strong>{report.reason}</strong>
-                    <div className="admin-record-meta">
-                      Listing {report.listingId.slice(0, 8)} · {formatDate(report.createdAt)}
-                    </div>
+                    <p>
+                      Listing {report.listingId.slice(0, 8)} - {formatDate(report.createdAt)}
+                    </p>
                   </div>
-                  <span className="admin-tag">{report.status}</span>
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">No reports.</div>
-            )}
-          </div>
-        </article>
-      </div>
-
-      <div className="admin-panels">
-        <article className="admin-panel">
-          <div className="admin-panel-head">
-            <div>
-              <h3>Newest listings</h3>
-              <span className="muted" style={{ fontSize: "0.88rem" }}>
-                Recent supply
-              </span>
+                  <StatusBadge value={report.status} />
+                </Link>
+              ))}
             </div>
-            <Link href={"/dashboard/admin/listings" as Route} className="admin-tag">
-              View all
-            </Link>
-          </div>
-          <div className="admin-list">
-            {recentListings.length ? (
-              recentListings.map((listing) => (
-                <div className="admin-list-row" key={listing.listingId}>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <img
-                      alt={listing.title}
-                      src={listing.previewImage}
-                      style={{ width: 56, height: 56, borderRadius: 16, objectFit: "cover", background: "#f3f4f6" }}
-                    />
-                    <div style={{ display: "grid", gap: 4 }}>
-                      <strong>{listing.title}</strong>
-                      <span className="admin-record-meta">
-                        {listing.location} · {formatMonthlyPrice(listing.price)}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="admin-tag">{listing.status}</span>
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">{listingsQuery.isLoading ? "Loading..." : "No listings."}</div>
-            )}
-          </div>
+          ) : (
+            <EmptyState title="No reports yet" description="New moderation cases will appear here as soon as users report listings or publishers." />
+          )}
         </article>
 
         <article className="admin-panel">
           <div className="admin-panel-head">
             <div>
-              <h3>Conversations</h3>
-              <span className="muted" style={{ fontSize: "0.88rem" }}>
-                Most recent threads
-              </span>
+              <h3>Recent conversations</h3>
+              <p className="admin-panel-copy">Latest buyer and owner threads.</p>
             </div>
-            <Link href={"/dashboard/admin/conversations" as Route} className="admin-tag">
-              Open
+            <Link className="admin-inline-link" href={"/dashboard/admin/conversations" as Route}>
+              Open threads
             </Link>
           </div>
-          <div className="admin-list">
-            {recentConversations.length ? (
-              recentConversations.map((conversation) => (
-                <div className="admin-list-row" key={conversation.conversationId}>
+          {conversationsQuery.isLoading ? (
+            <LoadingState rows={4} />
+          ) : recentConversations.length ? (
+            <div className="admin-stack">
+              {recentConversations.map((conversation) => (
+                <Link
+                  className="admin-compact-row"
+                  href={`/dashboard/admin/conversations?conversation=${conversation.conversationId}` as Route}
+                  key={conversation.conversationId}
+                >
                   <div>
                     <strong>{conversation.listingTitle}</strong>
-                    <div className="admin-record-meta">
-                      {conversation.buyer.name} · {conversation.owner.name}
-                    </div>
+                    <p>
+                      {conversation.buyer.name} • {conversation.owner.name}
+                    </p>
                   </div>
-                  <span className="admin-tag">{conversation.messageCount} msgs</span>
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">{conversationsQuery.isLoading ? "Loading..." : "No conversations."}</div>
-            )}
-          </div>
+                  <StatusBadge value={`${conversation.messageCount} messages`} />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No active threads" description="Conversation moderation becomes available once buyers start contacting publishers." />
+          )}
         </article>
       </div>
+
+      <article className="admin-panel">
+        <div className="admin-panel-head">
+          <div>
+            <h3>New supply</h3>
+            <p className="admin-panel-copy">Latest listings entering the marketplace.</p>
+          </div>
+          <Link className="admin-inline-link" href={"/dashboard/admin/listings" as Route}>
+            View listings
+          </Link>
+        </div>
+        {listingsQuery.isLoading ? (
+          <LoadingState rows={5} />
+        ) : recentListings.length ? (
+          <div className="admin-stack">
+            {recentListings.map((listing) => (
+              <Link
+                className="admin-supply-row"
+                href={`/dashboard/admin/listings?owner=${listing.ownerId}` as Route}
+                key={listing.listingId}
+              >
+                <div className="admin-supply-meta">
+                  <img alt={listing.title} src={listing.previewImage} />
+                  <div>
+                    <strong>{listing.title}</strong>
+                    <p>
+                      {listing.ownerContact.name} • {listing.location}
+                    </p>
+                  </div>
+                </div>
+                <div className="admin-supply-side">
+                  <StatusBadge value={listing.status} />
+                  <span className="admin-supply-price">{formatMonthlyPrice(listing.price)}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No listings yet" description="Listings will appear here as soon as publishers post inventory." />
+        )}
+      </article>
     </section>
   );
 }

@@ -1,81 +1,198 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSession } from "../../../../components/session-provider";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import type { Route } from "next";
+import type { AdminConversation } from "@roomxchange/shared";
+import { useAdminConversationDeleteMutation, useAdminConversations } from "../../../../components/admin/data";
+import { EmptyState, Modal, PageHeader, PaginationControls, StatusBadge } from "../../../../components/admin/ui";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
-    day: "numeric"
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
   }).format(new Date(value));
 }
 
+function readConversationFilter() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return new URLSearchParams(window.location.search).get("conversation") ?? "";
+}
+
 export default function AdminConversationsPage() {
-  const { api, session } = useSession();
-  const queryClient = useQueryClient();
+  const deleteMutation = useAdminConversationDeleteMutation();
+  const [activeConversationId, setActiveConversationId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<AdminConversation | null>(null);
+  const [cursorStack, setCursorStack] = useState<string[]>([]);
+  const currentCursor = cursorStack[cursorStack.length - 1];
 
-  const conversationsQuery = useQuery({
-    queryKey: ["admin-conversations"],
-    queryFn: () => api.getAdminConversations(),
-    enabled: Boolean(session && session.user.role !== "member")
+  useEffect(() => {
+    setActiveConversationId(readConversationFilter());
+  }, []);
+
+  const conversationsQuery = useAdminConversations({
+    limit: 20,
+    cursor: currentCursor,
+    query: searchQuery || undefined
   });
-
-  const deleteMutation = useMutation({
-    mutationFn: (conversationId: string) => api.deleteAdminConversation(conversationId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-conversations"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
-    }
-  });
-
-  const conversations = conversationsQuery.data ?? [];
+  const sortedConversations = conversationsQuery.data?.items ?? [];
+  const conversations = sortedConversations;
+  const activeConversation =
+    sortedConversations.find((conversation) => conversation.conversationId === activeConversationId) ?? sortedConversations[0] ?? null;
 
   return (
     <section className="admin-workspace">
-      <div className="admin-page-head">
-        <div>
-          <h1>Conversations</h1>
-          <p>Monitor active buyer and owner threads.</p>
-        </div>
-      </div>
+      <PageHeader title="Conversations" description="Thread-level moderation with the data currently exposed by the backend." />
 
-      <div className="grid">
-        {conversations.length ? (
-          conversations.map((conversation) => (
-            <article key={conversation.conversationId} className="admin-record-card">
-              <div className="admin-record-head">
-                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                  <img
-                    alt={conversation.listingTitle}
-                    src={conversation.listingPreviewImage}
-                    style={{ width: 72, height: 72, borderRadius: 18, objectFit: "cover", background: "#f3f4f6" }}
-                  />
-                  <div style={{ display: "grid", gap: 4 }}>
-                    <strong>{conversation.listingTitle}</strong>
-                    <span className="admin-record-meta">
-                      {conversation.buyer.name} · {conversation.owner.name}
-                    </span>
-                    <span className="admin-record-meta">{formatDate(conversation.lastMessageAt)}</span>
-                  </div>
+      <div className="admin-split-layout">
+        <article className="admin-panel">
+          <div className="admin-panel-head">
+            <div>
+              <h3>Threads</h3>
+              <p className="admin-panel-copy">Latest activity first.</p>
+            </div>
+          </div>
+          <div className="admin-inline-filters" style={{ marginBottom: 16 }}>
+            <input
+              className="admin-select"
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setCursorStack([]);
+              }}
+              placeholder="Search conversations"
+              value={searchQuery}
+            />
+          </div>
+
+          {conversationsQuery.isLoading ? (
+            <div className="admin-loading-list" aria-hidden="true">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div className="admin-loading-row" key={index}>
+                  <span />
+                  <span />
+                  <span />
                 </div>
-                <span className="admin-tag">{conversation.messageCount} msgs</span>
+              ))}
+            </div>
+          ) : sortedConversations.length ? (
+            <div className="admin-thread-list">
+              {sortedConversations.map((conversation) => (
+                <button
+                  className={`admin-thread-row ${activeConversation?.conversationId === conversation.conversationId ? "active" : ""}`}
+                  key={conversation.conversationId}
+                  onClick={() => setActiveConversationId(conversation.conversationId)}
+                  type="button"
+                >
+                    <img alt={conversation.listingTitle} src={conversation.listingPreviewImage} />
+                    <span>
+                      <strong>{conversation.listingTitle}</strong>
+                      <small>
+                        {conversation.buyer.name} - {conversation.owner.name}
+                      </small>
+                      <small>{conversation.lastMessagePreview}</small>
+                    </span>
+                  <StatusBadge value={`${conversation.messageCount} messages`} />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No conversations yet" description="Conversation moderation becomes available when users begin contacting publishers." />
+          )}
+          <PaginationControls
+            canNext={Boolean(conversationsQuery.data?.nextCursor)}
+            canPrevious={cursorStack.length > 0}
+            currentCount={conversations.length}
+            onNext={() => {
+              if (conversationsQuery.data?.nextCursor) {
+                setCursorStack((current) => [...current, conversationsQuery.data?.nextCursor as string]);
+              }
+            }}
+            onPrevious={() => setCursorStack((current) => current.slice(0, -1))}
+            total={conversationsQuery.data?.total ?? 0}
+          />
+        </article>
+
+        <article className="admin-panel">
+          {activeConversation ? (
+            <div className="admin-stack">
+              <div className="admin-detail-head">
+                <div>
+                  <h3>{activeConversation.listingTitle}</h3>
+                  <p className="admin-record-meta">Last activity {formatDate(activeConversation.lastMessageAt)}</p>
+                </div>
+                <StatusBadge value={`${activeConversation.messageCount} messages`} />
               </div>
 
-              <div className="admin-record-meta" style={{ lineHeight: 1.6 }}>
-                {conversation.lastMessagePreview}
+              <img alt={activeConversation.listingTitle} className="admin-detail-media" src={activeConversation.listingPreviewImage} />
+
+              <div className="admin-detail-grid">
+                <div>
+                  <span className="admin-detail-label">Buyer</span>
+                  <strong>{activeConversation.buyer.name}</strong>
+                </div>
+                <div>
+                  <span className="admin-detail-label">Owner</span>
+                  <strong>{activeConversation.owner.name}</strong>
+                </div>
+                <div>
+                  <span className="admin-detail-label">Conversation ID</span>
+                  <strong>{activeConversation.conversationId}</strong>
+                </div>
+                <div>
+                  <span className="admin-detail-label">Created</span>
+                  <strong>{formatDate(activeConversation.createdAt)}</strong>
+                </div>
               </div>
+
+              <div className="admin-quote-card">{activeConversation.lastMessagePreview}</div>
 
               <div className="admin-actions">
-                <button className="button" onClick={() => deleteMutation.mutate(conversation.conversationId)}>
+                <Link className="button secondary" href={`/dashboard/admin/listings?owner=${activeConversation.owner.userId}` as Route}>
+                  View owner listings
+                </Link>
+                <button className="button" onClick={() => setPendingDelete(activeConversation)} type="button">
                   Remove thread
                 </button>
               </div>
-            </article>
-          ))
-        ) : (
-          <div className="empty-state">{conversationsQuery.isLoading ? "Loading conversations..." : "No conversations."}</div>
-        )}
+            </div>
+          ) : (
+            <EmptyState title="Pick a thread" description="Select a conversation from the left panel to inspect the latest message context." />
+          )}
+        </article>
       </div>
+
+      <Modal
+        description="This removes the full thread using the existing admin conversation delete endpoint."
+        onClose={() => setPendingDelete(null)}
+        open={Boolean(pendingDelete)}
+        title={pendingDelete ? `Remove thread for "${pendingDelete.listingTitle}"?` : "Remove thread"}
+      >
+        <div className="admin-actions">
+          <button className="button secondary" onClick={() => setPendingDelete(null)} type="button">
+            Cancel
+          </button>
+          <button
+            className="button"
+            onClick={() => {
+              if (!pendingDelete) {
+                return;
+              }
+              deleteMutation.mutate(pendingDelete.conversationId, {
+                onSuccess: () => setPendingDelete(null)
+              });
+            }}
+            type="button"
+          >
+            Remove thread
+          </button>
+        </div>
+      </Modal>
     </section>
   );
 }

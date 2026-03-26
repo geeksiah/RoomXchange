@@ -1,14 +1,29 @@
 import { DeleteCommand, GetCommand, PutCommand, QueryCommand, ScanCommand, TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
 import {
+  adminConversationListQuerySchema,
+  adminConversationsListResponseSchema,
   adminConversationSchema,
+  adminEventListQuerySchema,
+  adminEventSchema,
+  adminEventsListResponseSchema,
+  adminListingListQuerySchema,
+  adminListingsListResponseSchema,
+  adminReportListQuerySchema,
+  adminReportsListResponseSchema,
+  adminSubscriptionListQuerySchema,
+  adminSubscriptionsListResponseSchema,
+  adminUserListQuerySchema,
+  adminUsersListResponseSchema,
   adminSubscriptionUpdateSchema,
   adminUserUpdateSchema,
   listingUpdateSchema,
   notificationSettingsSchema,
   type AdminConversation,
+  type AdminEvent,
   type Listing,
   type ListingSummary,
   type NotificationSettings,
+  type Report,
   type UserProfile
 } from "@roomxchange/contracts";
 import { maskPhone } from "@roomxchange/shared";
@@ -16,6 +31,7 @@ import { setUserSubscriptionState } from "./auth.js";
 import { db } from "./aws.js";
 import { env } from "./config.js";
 import type {
+  AdminEventItem,
   ConversationItem,
   ConversationMessageItem,
   ListingFeedItem,
@@ -104,7 +120,42 @@ function getDefaultNotificationSettings(): NotificationSettings {
   };
 }
 
-export async function getAdminUsers() {
+function normalizeQuery(value: string | undefined) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function paginateList<T>(items: T[], limit: number, cursor?: string) {
+  const start = cursor ? Number.parseInt(cursor, 10) || 0 : 0;
+  const sliced = items.slice(start, start + limit);
+  const nextCursor = start + limit < items.length ? String(start + limit) : null;
+
+  return {
+    items: sliced,
+    nextCursor,
+    total: items.length
+  };
+}
+
+function toAdminEvent(item: AdminEventItem): AdminEvent {
+  return adminEventSchema.parse({
+    id: `${item.PK}#${item.SK}`,
+    adminId: item.adminId,
+    action: item.action,
+    createdAt: item.createdAt,
+    targetUserId: item.targetUserId ?? null,
+    listingId: item.listingId ?? null,
+    conversationId: item.conversationId ?? null,
+    reportId: item.reportId ?? null,
+    role: item.role ?? null,
+    accountStatus: item.accountStatus ?? null,
+    subscriptionStatus: item.subscriptionStatus ?? null,
+    status: item.status ?? null,
+    resolutionNote: item.resolutionNote ?? null
+  });
+}
+
+export async function getAdminUsers(query: unknown = {}) {
+  const parsed = adminUserListQuerySchema.parse(query);
   const result = await db.send(
     new ScanCommand({
       TableName: env.TABLE_NAME,
@@ -118,7 +169,28 @@ export async function getAdminUsers() {
     })
   );
 
-  return ((result.Items ?? []) as UserItem[]).map(toUserProfile);
+  const search = normalizeQuery(parsed.query);
+  const filtered = ((result.Items ?? []) as UserItem[])
+    .map(toUserProfile)
+    .filter((user) => {
+      const queryPass =
+        !search ||
+        user.name.toLowerCase().includes(search) ||
+        (user.email ?? "").toLowerCase().includes(search) ||
+        user.phone.toLowerCase().includes(search);
+      const rolePass = !parsed.role || user.role === parsed.role;
+      const accountPass = !parsed.accountStatus || user.accountStatus === parsed.accountStatus;
+      const activityPass =
+        !parsed.activity ||
+        (parsed.activity === "has_listings" && user.listingsCount > 0) ||
+        (parsed.activity === "no_listings" && user.listingsCount === 0) ||
+        (parsed.activity === "subscribed" && user.isSubscribed);
+
+      return queryPass && rolePass && accountPass && activityPass;
+    })
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+  return adminUsersListResponseSchema.parse(paginateList(filtered, parsed.limit, parsed.cursor));
 }
 
 export async function updateAdminUser(adminId: string, userId: string, input: unknown) {
@@ -156,7 +228,8 @@ export async function updateAdminUser(adminId: string, userId: string, input: un
   return toUserProfile(updated);
 }
 
-export async function getAdminListings() {
+export async function getAdminListings(query: unknown = {}) {
+  const parsed = adminListingListQuerySchema.parse(query);
   const result = await db.send(
     new ScanCommand({
       TableName: env.TABLE_NAME,
@@ -171,12 +244,29 @@ export async function getAdminListings() {
   );
 
   const listings = (result.Items ?? []) as ListingLookupItem[];
-  return Promise.all(
+  const hydrated = await Promise.all(
     listings.map(async (listing) => {
       const owner = assertFound(await getOwner(listing.ownerId), "Listing owner not found.");
       return toListing(listing, owner);
     })
   );
+
+  const search = normalizeQuery(parsed.query);
+  const filtered = hydrated
+    .filter((listing) => {
+      const queryPass =
+        !search ||
+        listing.title.toLowerCase().includes(search) ||
+        listing.location.toLowerCase().includes(search) ||
+        listing.ownerContact.name.toLowerCase().includes(search);
+      const statusPass = !parsed.status || listing.status === parsed.status;
+      const ownerPass = !parsed.ownerId || listing.ownerId === parsed.ownerId;
+
+      return queryPass && statusPass && ownerPass;
+    })
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+  return adminListingsListResponseSchema.parse(paginateList(filtered, parsed.limit, parsed.cursor));
 }
 
 export async function updateAdminListing(adminId: string, listingId: string, input: unknown) {
@@ -395,7 +485,27 @@ export async function getAdminAnalytics() {
   };
 }
 
-export async function getAdminConversations() {
+export async function getAdminEvents(query: unknown = {}) {
+  const parsed = adminEventListQuerySchema.parse(query);
+  const result = await db.send(
+    new ScanCommand({
+      TableName: env.TABLE_NAME,
+      FilterExpression: "#entity = :entity",
+      ExpressionAttributeNames: { "#entity": "entity" },
+      ExpressionAttributeValues: { ":entity": "ADMIN_EVENT" }
+    })
+  );
+
+  const filtered = ((result.Items ?? []) as AdminEventItem[])
+    .filter((item) => (!parsed.adminId || item.adminId === parsed.adminId) && (!parsed.action || item.action === parsed.action))
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .map(toAdminEvent);
+
+  return adminEventsListResponseSchema.parse(paginateList(filtered, parsed.limit, parsed.cursor));
+}
+
+export async function getAdminConversations(query: unknown = {}) {
+  const parsed = adminConversationListQuerySchema.parse(query);
   const result = await db.send(
     new ScanCommand({
       TableName: env.TABLE_NAME,
@@ -406,7 +516,7 @@ export async function getAdminConversations() {
   );
 
   const conversations = (result.Items ?? []) as ConversationItem[];
-  return Promise.all(
+  const hydrated = await Promise.all(
     conversations.map(async (conversation) => {
       const messages = await db.send(
         new QueryCommand({
@@ -442,6 +552,25 @@ export async function getAdminConversations() {
       } satisfies AdminConversation);
     })
   );
+
+  const search = normalizeQuery(parsed.query);
+  const filtered = hydrated
+    .filter((conversation) => {
+      const queryPass =
+        !search ||
+        conversation.listingTitle.toLowerCase().includes(search) ||
+        conversation.buyer.name.toLowerCase().includes(search) ||
+        conversation.owner.name.toLowerCase().includes(search) ||
+        conversation.lastMessagePreview.toLowerCase().includes(search);
+      const listingPass = !parsed.listingId || conversation.listingId === parsed.listingId;
+      const ownerPass = !parsed.ownerId || conversation.owner.userId === parsed.ownerId;
+      const buyerPass = !parsed.buyerId || conversation.buyer.userId === parsed.buyerId;
+
+      return queryPass && listingPass && ownerPass && buyerPass;
+    })
+    .sort((left, right) => right.lastMessageAt.localeCompare(left.lastMessageAt));
+
+  return adminConversationsListResponseSchema.parse(paginateList(filtered, parsed.limit, parsed.cursor));
 }
 
 export async function deleteAdminConversation(adminId: string, conversationId: string) {
@@ -495,7 +624,8 @@ export async function deleteAdminConversation(adminId: string, conversationId: s
   return { success: true as const };
 }
 
-export async function getAdminSubscriptions() {
+export async function getAdminSubscriptions(query: unknown = {}) {
+  const parsed = adminSubscriptionListQuerySchema.parse(query);
   const result = await db.send(
     new ScanCommand({
       TableName: env.TABLE_NAME,
@@ -505,7 +635,22 @@ export async function getAdminSubscriptions() {
     })
   );
 
-  return ((result.Items ?? []) as UserItem[]).map(toUserProfile);
+  const search = normalizeQuery(parsed.query);
+  const filtered = ((result.Items ?? []) as UserItem[])
+    .map(toUserProfile)
+    .filter((user) => {
+      const queryPass =
+        !search ||
+        user.name.toLowerCase().includes(search) ||
+        (user.email ?? "").toLowerCase().includes(search) ||
+        user.phone.toLowerCase().includes(search);
+      const statusPass = !parsed.subscriptionStatus || user.subscriptionStatus === parsed.subscriptionStatus;
+      const accessPass = parsed.isSubscribed === undefined || user.isSubscribed === parsed.isSubscribed;
+      return queryPass && statusPass && accessPass;
+    })
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+
+  return adminSubscriptionsListResponseSchema.parse(paginateList(filtered, parsed.limit, parsed.cursor));
 }
 
 export async function updateAdminSubscription(adminId: string, userId: string, input: unknown) {

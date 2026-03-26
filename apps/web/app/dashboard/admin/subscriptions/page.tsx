@@ -1,102 +1,114 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSession } from "../../../../components/session-provider";
+import { useState } from "react";
+import { useAdminSubscriptionMutation, useAdminSubscriptions } from "../../../../components/admin/data";
+import { ActionDropdown, DataTable, EmptyState, PageHeader, PaginationControls, StatusBadge } from "../../../../components/admin/ui";
 
 const subscriptionStatuses = ["inactive", "active", "past_due", "expired", "cancelled"] as const;
 
 export default function AdminSubscriptionsPage() {
-  const { api, session } = useSession();
-  const queryClient = useQueryClient();
-
-  const subscriptionsQuery = useQuery({
-    queryKey: ["admin-subscriptions"],
-    queryFn: () => api.getAdminSubscriptions(),
-    enabled: Boolean(session && session.user.role !== "member")
+  const updateMutation = useAdminSubscriptionMutation();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [cursorStack, setCursorStack] = useState<string[]>([]);
+  const currentCursor = cursorStack[cursorStack.length - 1];
+  const subscriptionsQuery = useAdminSubscriptions({
+    limit: 20,
+    cursor: currentCursor,
+    query: searchQuery || undefined
   });
-
-  const updateMutation = useMutation({
-    mutationFn: ({
-      userId,
-      subscriptionStatus,
-      isSubscribed
-    }: {
-      userId: string;
-      subscriptionStatus: (typeof subscriptionStatuses)[number];
-      isSubscribed: boolean;
-    }) => api.updateAdminSubscription(userId, { subscriptionStatus, isSubscribed }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-subscriptions"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
-    }
-  });
-
-  const users = subscriptionsQuery.data ?? [];
+  const users = subscriptionsQuery.data?.items ?? [];
 
   return (
     <section className="admin-workspace">
-      <div className="admin-page-head">
-        <div>
-          <h1>Subscriptions</h1>
-          <p>Access state and recovery controls.</p>
+      <PageHeader title="Subscriptions" description="Access recovery and subscription-state control." />
+
+      <article className="admin-panel">
+        <div className="admin-inline-filters" style={{ marginBottom: 16 }}>
+          <input
+            className="admin-select"
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+              setCursorStack([]);
+            }}
+            placeholder="Search subscriptions"
+            value={searchQuery}
+          />
         </div>
-      </div>
-
-      <div className="grid">
-        {users.length ? (
-          users.map((user) => (
-            <article key={user.userId} className="admin-record-card">
-              <div className="admin-record-head">
-                <div style={{ display: "grid", gap: 4 }}>
+        <DataTable
+          columns={[
+            {
+              key: "user",
+              header: "User",
+              cell: (user) => (
+                <div className="admin-cell-stack">
                   <strong>{user.name}</strong>
-                  <span className="admin-record-meta">
-                    {user.email ?? user.phone} · {user.subscriptionPlan ?? "No plan"}
-                  </span>
+                  <small>{user.email ?? user.phone}</small>
                 </div>
-                <div className="admin-actions">
-                  <span className="admin-tag">{user.subscriptionStatus}</span>
-                  <span className="admin-tag">{user.isSubscribed ? "active access" : "blocked"}</span>
-                </div>
-              </div>
-
-              <div className="admin-actions">
-                <select
-                  className="admin-select"
-                  defaultValue={user.subscriptionStatus}
-                  onChange={(event) =>
-                    updateMutation.mutate({
-                      userId: user.userId,
-                      subscriptionStatus: event.target.value as (typeof subscriptionStatuses)[number],
-                      isSubscribed: event.target.value === "active"
-                    })
-                  }
-                >
-                  {subscriptionStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className="button secondary"
-                  onClick={() => updateMutation.mutate({ userId: user.userId, subscriptionStatus: "active", isSubscribed: true })}
-                >
-                  Force active
-                </button>
-                <button
-                  className="button"
-                  onClick={() => updateMutation.mutate({ userId: user.userId, subscriptionStatus: "expired", isSubscribed: false })}
-                >
-                  Expire
-                </button>
-              </div>
-            </article>
-          ))
-        ) : (
-          <div className="empty-state">{subscriptionsQuery.isLoading ? "Loading subscriptions..." : "No subscriptions."}</div>
-        )}
-      </div>
+              )
+            },
+            {
+              key: "plan",
+              header: "Plan",
+              cell: (user) => user.subscriptionPlan ?? "No plan"
+            },
+            {
+              key: "status",
+              header: "Status",
+              cell: (user) => <StatusBadge value={user.subscriptionStatus} />
+            },
+            {
+              key: "access",
+              header: "Access",
+              cell: (user) => <StatusBadge value={user.isSubscribed ? "active access" : "blocked"} />
+            },
+            {
+              key: "actions",
+              header: "",
+              className: "admin-cell-actions",
+              cell: (user) => (
+                <ActionDropdown
+                  items={[
+                    {
+                      label: "Force active",
+                      onSelect: () =>
+                        updateMutation.mutate({ userId: user.userId, input: { subscriptionStatus: "active", isSubscribed: true } })
+                    },
+                    {
+                      label: "Expire access",
+                      onSelect: () =>
+                        updateMutation.mutate({ userId: user.userId, input: { subscriptionStatus: "expired", isSubscribed: false } })
+                    },
+                    ...subscriptionStatuses.map((status) => ({
+                      label: `Set ${status.replace(/_/g, " ")}`,
+                      onSelect: () =>
+                        updateMutation.mutate({
+                          userId: user.userId,
+                          input: { subscriptionStatus: status, isSubscribed: status === "active" }
+                        })
+                    }))
+                  ]}
+                />
+              )
+            }
+          ]}
+          empty={<EmptyState title="No subscription records" description="Subscription state will appear here once accounts begin subscribing." />}
+          loading={subscriptionsQuery.isLoading}
+          rowKey={(user) => user.userId}
+          rows={users}
+        />
+        <PaginationControls
+          canNext={Boolean(subscriptionsQuery.data?.nextCursor)}
+          canPrevious={cursorStack.length > 0}
+          currentCount={users.length}
+          onNext={() => {
+            if (subscriptionsQuery.data?.nextCursor) {
+              setCursorStack((current) => [...current, subscriptionsQuery.data?.nextCursor as string]);
+            }
+          }}
+          onPrevious={() => setCursorStack((current) => current.slice(0, -1))}
+          total={subscriptionsQuery.data?.total ?? 0}
+        />
+      </article>
     </section>
   );
 }

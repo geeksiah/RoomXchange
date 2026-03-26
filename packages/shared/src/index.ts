@@ -7,8 +7,21 @@ import {
   authPasswordResetVerifySchema,
   authSignupRequestSchema,
   authSignupVerifySchema,
+  adminConversationListQuerySchema,
+  adminConversationsListResponseSchema,
+  adminEventListQuerySchema,
+  adminEventsListResponseSchema,
+  adminEventSchema,
   adminAnalyticsSchema,
   adminConversationSchema,
+  adminListingListQuerySchema,
+  adminListingsListResponseSchema,
+  adminReportListQuerySchema,
+  adminReportsListResponseSchema,
+  adminSubscriptionListQuerySchema,
+  adminSubscriptionsListResponseSchema,
+  adminUserListQuerySchema,
+  adminUsersListResponseSchema,
   adminSubscriptionUpdateSchema,
   adminUserUpdateSchema,
   authSessionSchema,
@@ -56,7 +69,20 @@ import {
   type AdminLoginInput,
   type AdminAnalytics,
   type AdminConversation,
+  type AdminConversationListQuery,
+  type AdminConversationsListResponse,
+  type AdminEvent,
+  type AdminEventListQuery,
+  type AdminEventsListResponse,
+  type AdminListingListQuery,
+  type AdminListingsListResponse,
   type AdminSubscriptionUpdateInput,
+  type AdminSubscriptionListQuery,
+  type AdminSubscriptionsListResponse,
+  type AdminUserListQuery,
+  type AdminUsersListResponse,
+  type AdminReportListQuery,
+  type AdminReportsListResponse,
   type AdminUserUpdateInput,
   type CheckoutLinkResponse,
   type ConversationListResponse,
@@ -430,22 +456,25 @@ export function createApiClient(options: ApiClientOptions = {}) {
     getMyReports() {
       return request("/reports/mine", z.array(reportSchema), {}, options);
     },
-    getAdminReports() {
-      return request("/admin/reports", z.array(reportSchema), {}, options);
+    getAdminReports(query: Partial<AdminReportListQuery> = {}) {
+      const params = adminReportListQuerySchema.partial().parse(query);
+      return request("/admin/reports", adminReportsListResponseSchema, { params }, options);
     },
     updateAdminReport(reportId: string, input: ReportUpdateInput) {
       reportUpdateSchema.parse(input);
       return request(`/admin/reports/${reportId}`, reportSchema, { method: "PATCH", body: input }, options);
     },
-    getAdminUsers() {
-      return request("/admin/users", z.array(userProfileSchema), {}, options);
+    getAdminUsers(query: Partial<AdminUserListQuery> = {}) {
+      const params = adminUserListQuerySchema.partial().parse(query);
+      return request("/admin/users", adminUsersListResponseSchema, { params }, options);
     },
     updateAdminUser(userId: string, input: AdminUserUpdateInput) {
       adminUserUpdateSchema.parse(input);
       return request(`/admin/users/${userId}`, userProfileSchema, { method: "PATCH", body: input }, options);
     },
-    getAdminListings() {
-      return request("/admin/listings", z.array(listingSchema), {}, options);
+    getAdminListings(query: Partial<AdminListingListQuery> = {}) {
+      const params = adminListingListQuerySchema.partial().parse(query);
+      return request("/admin/listings", adminListingsListResponseSchema, { params }, options);
     },
     updateAdminListing(listingId: string, input: ListingUpdateInput) {
       listingUpdateSchema.parse(input);
@@ -457,14 +486,16 @@ export function createApiClient(options: ApiClientOptions = {}) {
     getAdminAnalytics() {
       return request("/admin/analytics", adminAnalyticsSchema, {}, options);
     },
-    getAdminConversations() {
-      return request("/admin/conversations", z.array(adminConversationSchema), {}, options);
+    getAdminConversations(query: Partial<AdminConversationListQuery> = {}) {
+      const params = adminConversationListQuerySchema.partial().parse(query);
+      return request("/admin/conversations", adminConversationsListResponseSchema, { params }, options);
     },
     async deleteAdminConversation(conversationId: string) {
       await request(`/admin/conversations/${conversationId}`, conversationMutationResultSchema, { method: "DELETE" }, options);
     },
-    getAdminSubscriptions() {
-      return request("/admin/subscriptions", z.array(userProfileSchema), {}, options);
+    getAdminSubscriptions(query: Partial<AdminSubscriptionListQuery> = {}) {
+      const params = adminSubscriptionListQuerySchema.partial().parse(query);
+      return request("/admin/subscriptions", adminSubscriptionsListResponseSchema, { params }, options);
     },
     updateAdminSubscription(userId: string, input: AdminSubscriptionUpdateInput) {
       adminSubscriptionUpdateSchema.parse(input);
@@ -513,6 +544,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
     },
     getAdminNotificationSettings() {
       return request("/admin/notifications/settings", notificationSettingsSchema, {}, options);
+    },
+    getAdminEvents(query: Partial<AdminEventListQuery> = {}) {
+      const params = adminEventListQuerySchema.partial().parse(query);
+      return request("/admin/events", adminEventsListResponseSchema, { params }, options);
     },
     updateAdminNotificationSettings(input: Partial<NotificationSettings>) {
       return request("/admin/notifications/settings", notificationSettingsSchema, { method: "PATCH", body: input }, options);
@@ -596,7 +631,21 @@ export type {
   AuthSignupVerifyInput,
   AuthSession,
   AdminConversation,
+  AdminConversationListQuery,
+  AdminConversationsListResponse,
+  AdminEvent,
+  AdminEventListQuery,
+  AdminEventsListResponse,
+  AdminListingListQuery,
+  AdminListingsListResponse,
+  AdminReportListQuery,
+  AdminReportsListResponse,
+  AdminSubscriptionListQuery,
   AdminSubscriptionUpdateInput,
+  AdminSubscriptionsListResponse,
+  AdminUserListQuery,
+  AdminUsersListResponse,
+  AdminUserUpdateInput,
   CheckoutLinkResponse,
   ConversationListResponse,
   ConversationMessage,

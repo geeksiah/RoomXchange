@@ -1,126 +1,316 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSession } from "../../../../components/session-provider";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import type { Route } from "next";
+import { getInitials } from "@roomxchange/shared";
+import type { UserProfile } from "@roomxchange/shared";
+import { useAdminAnalytics, useAdminUserMutation, useAdminUsers } from "../../../../components/admin/data";
+import { ActionDropdown, DataTable, EmptyState, PageHeader, PaginationControls, SegmentTabs, StatCard, StatusBadge } from "../../../../components/admin/ui";
 
-const roleOptions = ["member", "moderator", "admin", "super_admin"] as const;
-const statusOptions = ["active", "frozen", "removed"] as const;
+type ActivityFilter = "all" | "has-listings" | "no-listings" | "subscribed";
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
+function readUserFilters() {
+  if (typeof window === "undefined") {
+    return { role: "all", status: "all", activity: "all", userId: "" };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  return {
+    role: params.get("role") ?? "all",
+    status: params.get("status") ?? "all",
+    activity: params.get("activity") ?? "all",
+    userId: params.get("user") ?? ""
+  };
 }
 
 export default function AdminUsersPage() {
-  const { api, session } = useSession();
-  const queryClient = useQueryClient();
+  const analyticsQuery = useAdminAnalytics();
+  const updateMutation = useAdminUserMutation();
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [bulkPending, setBulkPending] = useState(false);
+  const [cursorStack, setCursorStack] = useState<string[]>([]);
+  const currentCursor = cursorStack[cursorStack.length - 1];
 
-  const usersQuery = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: () => api.getAdminUsers(),
-    enabled: Boolean(session && session.user.role !== "member")
+  useEffect(() => {
+    const filters = readUserFilters();
+    setRoleFilter(filters.role);
+    setStatusFilter(filters.status);
+    setActivityFilter(filters.activity as ActivityFilter);
+    setSelectedUserId(filters.userId);
+  }, []);
+
+  const usersQuery = useAdminUsers({
+    limit: 20,
+    cursor: currentCursor,
+    query: searchQuery || undefined,
+    role: roleFilter === "all" ? undefined : (roleFilter as UserProfile["role"]),
+    accountStatus: statusFilter === "all" ? undefined : (statusFilter as UserProfile["accountStatus"]),
+    activity: activityFilter === "all" ? undefined : activityFilter === "has-listings" ? "has_listings" : activityFilter === "no-listings" ? "no_listings" : "subscribed"
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ userId, role, accountStatus }: { userId: string; role?: (typeof roleOptions)[number]; accountStatus?: (typeof statusOptions)[number] }) =>
-      api.updateAdminUser(userId, { role, accountStatus }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
+  const users = usersQuery.data?.items ?? [];
+  const analytics = analyticsQuery.data;
+
+  const selectedUser =
+    users.find((user) => user.userId === selectedUserId) ??
+    users[0] ??
+    null;
+
+  const handleUpdate = (userId: string, input: Partial<Pick<UserProfile, "role" | "accountStatus">>) => {
+    updateMutation.mutate({ userId, input });
+  };
+
+  const allVisibleSelected = users.length > 0 && users.every((user) => selectedUserIds.includes(user.userId));
+
+  const toggleSelectedUser = (userId: string) => {
+    setSelectedUserIds((current) => (current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]));
+  };
+
+  const toggleAllVisibleUsers = () => {
+    setSelectedUserIds((current) => {
+      if (allVisibleSelected) {
+        return current.filter((id) => !users.some((user) => user.userId === id));
+      }
+
+      return Array.from(new Set([...current, ...users.map((user) => user.userId)]));
+    });
+  };
+
+  const runBulkUpdate = async (input: Partial<Pick<UserProfile, "role" | "accountStatus">>) => {
+    if (!selectedUserIds.length) {
+      return;
     }
-  });
 
-  const users = usersQuery.data ?? [];
-  const activeCount = users.filter((user) => user.accountStatus === "active").length;
-  const frozenCount = users.filter((user) => user.accountStatus === "frozen").length;
-  const adminCount = users.filter((user) => user.role !== "member").length;
+    try {
+      setBulkPending(true);
+      await Promise.all(selectedUserIds.map((userId) => updateMutation.mutateAsync({ userId, input })));
+      setSelectedUserIds([]);
+    } finally {
+      setBulkPending(false);
+    }
+  };
 
   return (
     <section className="admin-workspace">
-      <div className="admin-page-head">
-        <div>
-          <h1>Users</h1>
-          <p>Accounts, access, and admin roles.</p>
-        </div>
-      </div>
+      <PageHeader title="Users" description="Account access, role control, and immediate moderation state." />
 
       <div className="admin-stats">
-        <article className="admin-stat-card soft-accent">
-          <span className="admin-stat-label">Total</span>
-          <strong className="admin-stat-value">{users.length}</strong>
-        </article>
-        <article className="admin-stat-card soft-success">
-          <span className="admin-stat-label">Active</span>
-          <strong className="admin-stat-value">{activeCount}</strong>
-        </article>
-        <article className="admin-stat-card soft-warning">
-          <span className="admin-stat-label">Frozen</span>
-          <strong className="admin-stat-value">{frozenCount}</strong>
-        </article>
-        <article className="admin-stat-card soft-info">
-          <span className="admin-stat-label">Admin seats</span>
-          <strong className="admin-stat-value">{adminCount}</strong>
-        </article>
+        <StatCard label="All users" tone="accent" value={analytics?.totalUsers ?? 0} />
+        <StatCard href="/dashboard/admin/users?status=active" label="Active" tone="success" value={analytics?.activeUsers ?? 0} />
+        <StatCard href="/dashboard/admin/users?status=frozen" label="Frozen" tone="warning" value={analytics?.frozenUsers ?? 0} />
+        <StatCard href="/dashboard/admin/users?role=admin" label="Admin seats" tone="info" value={analytics?.totalAdmins ?? 0} />
       </div>
 
-      <div className="grid">
-        {users.length ? (
-          users.map((user) => (
-            <article key={user.userId} className="admin-record-card">
-              <div className="admin-record-head">
-                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+      {selectedUser ? (
+        <article className="admin-panel">
+          <div className="admin-detail-head">
+            <div className="admin-user-summary">
+              <span className="admin-avatar admin-avatar-large">{getInitials(selectedUser.name)}</span>
+              <div>
+                <h3>{selectedUser.name}</h3>
+                <p>{selectedUser.email ?? selectedUser.phone}</p>
+              </div>
+            </div>
+            <div className="admin-actions">
+              <StatusBadge value={selectedUser.role} />
+              <StatusBadge value={selectedUser.accountStatus} />
+              <StatusBadge value={selectedUser.subscriptionStatus} />
+            </div>
+          </div>
+          <div className="admin-detail-grid">
+            <div>
+              <span className="admin-detail-label">Listings</span>
+              <strong>{selectedUser.listingsCount}</strong>
+            </div>
+            <div>
+              <span className="admin-detail-label">Successful listings</span>
+              <strong>{selectedUser.successfulListings}</strong>
+            </div>
+            <div>
+              <span className="admin-detail-label">Joined</span>
+              <strong>{new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(selectedUser.createdAt))}</strong>
+            </div>
+            <div>
+              <span className="admin-detail-label">Phone visibility</span>
+              <strong>{selectedUser.phonePublic ? "Public" : "Private"}</strong>
+            </div>
+          </div>
+          <div className="admin-actions">
+            <Link className="button secondary" href={`/dashboard/admin/listings?owner=${selectedUser.userId}` as Route}>
+              View listings
+            </Link>
+            <Link className="button secondary" href={`/dashboard/reports?user=${selectedUser.userId}` as Route}>
+              View reports
+            </Link>
+          </div>
+        </article>
+      ) : null}
+
+      <article className="admin-panel">
+        <div className="admin-table-toolbar">
+          <SegmentTabs
+            onChange={(value) => {
+              setStatusFilter(value);
+              setCursorStack([]);
+            }}
+            options={[
+              { label: "All statuses", value: "all" },
+              { label: "Active", value: "active" },
+              { label: "Frozen", value: "frozen" },
+              { label: "Removed", value: "removed" }
+            ]}
+            value={statusFilter}
+          />
+          <div className="admin-inline-filters">
+            <input
+              className="admin-select"
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setCursorStack([]);
+              }}
+              placeholder="Search users"
+              value={searchQuery}
+            />
+            <select className="admin-select" onChange={(event) => {
+              setRoleFilter(event.target.value);
+              setCursorStack([]);
+            }} value={roleFilter}>
+              <option value="all">All roles</option>
+              <option value="member">Member</option>
+              <option value="moderator">Moderator</option>
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super admin</option>
+            </select>
+            <select className="admin-select" onChange={(event) => {
+              setActivityFilter(event.target.value as ActivityFilter);
+              setCursorStack([]);
+            }} value={activityFilter}>
+              <option value="all">All activity</option>
+              <option value="has-listings">Has listings</option>
+              <option value="no-listings">No listings</option>
+              <option value="subscribed">Subscribed</option>
+            </select>
+          </div>
+        </div>
+
+        {selectedUserIds.length ? (
+          <div className="admin-bulk-bar">
+            <strong>{selectedUserIds.length} selected</strong>
+            <div className="admin-actions">
+              <button className="button secondary" disabled={bulkPending} onClick={() => runBulkUpdate({ role: "moderator" })} type="button">
+                Set moderator
+              </button>
+              <button className="button secondary" disabled={bulkPending} onClick={() => runBulkUpdate({ accountStatus: "active" })} type="button">
+                Activate
+              </button>
+              <button className="button secondary" disabled={bulkPending} onClick={() => runBulkUpdate({ accountStatus: "frozen" })} type="button">
+                Freeze
+              </button>
+              <button className="button secondary" disabled={bulkPending} onClick={() => setSelectedUserIds([])} type="button">
+                Clear
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <DataTable
+          columns={[
+            {
+              key: "select",
+              header: "",
+              className: "admin-cell-check",
+              cell: (user) => (
+                <input
+                  aria-label={`Select ${user.name}`}
+                  checked={selectedUserIds.includes(user.userId)}
+                  onChange={() => toggleSelectedUser(user.userId)}
+                  type="checkbox"
+                />
+              )
+            },
+            {
+              key: "identity",
+              header: "User",
+              cell: (user) => (
+                <button className="admin-table-identity" onClick={() => setSelectedUserId(user.userId)} type="button">
                   <span className="admin-avatar" style={{ background: "var(--rx-accent-soft)", color: "var(--rx-accent)" }}>
                     {getInitials(user.name)}
                   </span>
-                  <div style={{ display: "grid", gap: 4 }}>
+                  <span>
                     <strong>{user.name}</strong>
-                    <span className="admin-record-meta">
-                      {user.email ?? user.phone} · {user.listingsCount} listings
-                    </span>
-                  </div>
+                    <small>{user.email ?? user.phone}</small>
+                  </span>
+                </button>
+              )
+            },
+            {
+              key: "role",
+              header: "Role",
+              cell: (user) => <StatusBadge value={user.role} />
+            },
+            {
+              key: "status",
+              header: "Status",
+              cell: (user) => <StatusBadge value={user.accountStatus} />
+            },
+            {
+              key: "activity",
+              header: "Activity",
+              cell: (user) => (
+                <div className="admin-cell-stack">
+                  <strong>{user.listingsCount} listings</strong>
+                  <small>{user.isSubscribed ? "Subscribed" : user.subscriptionStatus.replace(/_/g, " ")}</small>
                 </div>
-                <div className="admin-actions">
-                  <span className="admin-tag">{user.role}</span>
-                  <span className="admin-tag">{user.accountStatus}</span>
-                </div>
-              </div>
-
-              <div className="admin-actions">
-                <select
-                  className="admin-select"
-                  defaultValue={user.role}
-                  onChange={(event) => updateMutation.mutate({ userId: user.userId, role: event.target.value as (typeof roleOptions)[number] })}
-                >
-                  {roleOptions.map((role) => (
-                    <option key={role} value={role}>
-                      {role.replace("_", " ")}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="admin-select"
-                  defaultValue={user.accountStatus}
-                  onChange={(event) =>
-                    updateMutation.mutate({ userId: user.userId, accountStatus: event.target.value as (typeof statusOptions)[number] })
-                  }
-                >
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </article>
-          ))
-        ) : (
-          <div className="empty-state">{usersQuery.isLoading ? "Loading users..." : "No users."}</div>
-        )}
-      </div>
+              )
+            },
+            {
+              key: "actions",
+              header: "",
+              className: "admin-cell-actions",
+              cell: (user) => (
+                <ActionDropdown
+                  items={[
+                    { label: "Set as moderator", onSelect: () => handleUpdate(user.userId, { role: "moderator" }) },
+                    { label: "Set as admin", onSelect: () => handleUpdate(user.userId, { role: "admin" }) },
+                    { label: "Activate account", onSelect: () => handleUpdate(user.userId, { accountStatus: "active" }) },
+                    { label: "Freeze account", onSelect: () => handleUpdate(user.userId, { accountStatus: "frozen" }) },
+                    { label: "Remove account", danger: true, onSelect: () => handleUpdate(user.userId, { accountStatus: "removed" }) }
+                  ]}
+                />
+              )
+            }
+          ]}
+          empty={<EmptyState title="No matching users" description="Adjust the current search or filters to widen the result set." />}
+          loading={usersQuery.isLoading}
+          rowKey={(user) => user.userId}
+          rows={users}
+        />
+        {users.length ? (
+          <div className="admin-table-select-row">
+            <label>
+              <input checked={allVisibleSelected} onChange={toggleAllVisibleUsers} type="checkbox" /> Select page
+            </label>
+          </div>
+        ) : null}
+        <PaginationControls
+          canNext={Boolean(usersQuery.data?.nextCursor)}
+          canPrevious={cursorStack.length > 0}
+          currentCount={users.length}
+          onNext={() => {
+            if (usersQuery.data?.nextCursor) {
+              setCursorStack((current) => [...current, usersQuery.data?.nextCursor as string]);
+            }
+          }}
+          onPrevious={() => setCursorStack((current) => current.slice(0, -1))}
+          total={usersQuery.data?.total ?? 0}
+        />
+      </article>
     </section>
   );
 }

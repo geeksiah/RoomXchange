@@ -1,6 +1,19 @@
 import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
 import {
+  adminConversationListQuerySchema,
+  adminConversationsListResponseSchema,
+  adminEventListQuerySchema,
+  adminEventsListResponseSchema,
+  adminEventSchema,
+  adminListingListQuerySchema,
+  adminListingsListResponseSchema,
+  adminReportListQuerySchema,
+  adminReportsListResponseSchema,
+  adminSubscriptionListQuerySchema,
+  adminSubscriptionsListResponseSchema,
+  adminUserListQuerySchema,
+  adminUsersListResponseSchema,
   adminLoginSchema,
   adminSubscriptionUpdateSchema,
   adminUserUpdateSchema,
@@ -9,6 +22,7 @@ import {
   reportUpdateSchema,
   type AdminAnalytics,
   type AdminConversation,
+  type AdminEvent,
   type AdminLoginInput,
   type AuthSession,
   type Listing,
@@ -61,6 +75,7 @@ const localState: {
   listings: Listing[];
   conversations: AdminConversation[];
   reports: Report[];
+  adminEvents: AdminEvent[];
   notificationSettings: NotificationSettings;
 } = {
   users: [
@@ -178,6 +193,7 @@ const localState: {
       updatedAt: "2026-03-24T08:20:00.000Z"
     }
   ],
+  adminEvents: [],
   notificationSettings: {
     pushEnabled: true,
     messageNotificationsEnabled: true,
@@ -188,6 +204,29 @@ const localState: {
     updatedAt: "2026-03-24T08:00:00.000Z"
   }
 };
+
+function paginateList<T>(items: T[], limit: number, cursor?: string) {
+  const start = cursor ? Number.parseInt(cursor, 10) || 0 : 0;
+  const sliced = items.slice(start, start + limit);
+  const nextCursor = start + limit < items.length ? String(start + limit) : null;
+
+  return {
+    items: sliced,
+    nextCursor,
+    total: items.length
+  };
+}
+
+function recordAdminEvent(adminId: string, action: string, extra: Omit<AdminEvent, "id" | "adminId" | "action" | "createdAt"> = {}) {
+  const event = adminEventSchema.parse({
+    id: randomUUID(),
+    adminId,
+    action,
+    createdAt: nowIso(),
+    ...extra
+  });
+  localState.adminEvents.unshift(event);
+}
 
 localState.listings = [
   {
@@ -325,9 +364,29 @@ export async function localGetUserProfile(userId: string) {
   return clone(assertFound(localState.users.find((item) => item.userId === userId), "User not found."));
 }
 
-export async function localGetAdminUsers(userId: string) {
+export async function localGetAdminUsers(userId: string, query: unknown = {}) {
   assertLocalAdmin(userId);
-  return clone(localState.users);
+  const parsed = adminUserListQuerySchema.parse(query);
+  const search = parsed.query?.trim().toLowerCase() ?? "";
+  const filtered = localState.users
+    .filter((user) => {
+      const queryPass =
+        !search ||
+        user.name.toLowerCase().includes(search) ||
+        (user.email ?? "").toLowerCase().includes(search) ||
+        user.phone.toLowerCase().includes(search);
+      const rolePass = !parsed.role || user.role === parsed.role;
+      const statusPass = !parsed.accountStatus || user.accountStatus === parsed.accountStatus;
+      const activityPass =
+        !parsed.activity ||
+        (parsed.activity === "has_listings" && user.listingsCount > 0) ||
+        (parsed.activity === "no_listings" && user.listingsCount === 0) ||
+        (parsed.activity === "subscribed" && user.isSubscribed);
+      return queryPass && rolePass && statusPass && activityPass;
+    })
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+  return adminUsersListResponseSchema.parse(paginateList(clone(filtered), parsed.limit, parsed.cursor));
 }
 
 export async function localUpdateAdminUser(adminId: string, userId: string, input: unknown) {
@@ -336,12 +395,32 @@ export async function localUpdateAdminUser(adminId: string, userId: string, inpu
   const user = assertFound(localState.users.find((item) => item.userId === userId), "User not found.");
   Object.assign(user, parsed, { updatedAt: nowIso() });
   syncListingOwnerContact(userId);
+  recordAdminEvent(adminId, "user.update", {
+    targetUserId: userId,
+    role: user.role,
+    accountStatus: user.accountStatus
+  });
   return clone(user);
 }
 
-export async function localGetAdminListings(userId: string) {
+export async function localGetAdminListings(userId: string, query: unknown = {}) {
   assertLocalAdmin(userId);
-  return clone(localState.listings);
+  const parsed = adminListingListQuerySchema.parse(query);
+  const search = parsed.query?.trim().toLowerCase() ?? "";
+  const filtered = localState.listings
+    .filter((listing) => {
+      const queryPass =
+        !search ||
+        listing.title.toLowerCase().includes(search) ||
+        listing.location.toLowerCase().includes(search) ||
+        listing.ownerContact.name.toLowerCase().includes(search);
+      const statusPass = !parsed.status || listing.status === parsed.status;
+      const ownerPass = !parsed.ownerId || listing.ownerId === parsed.ownerId;
+      return queryPass && statusPass && ownerPass;
+    })
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+  return adminListingsListResponseSchema.parse(paginateList(clone(filtered), parsed.limit, parsed.cursor));
 }
 
 export async function localUpdateAdminListing(adminId: string, listingId: string, input: unknown) {
@@ -349,12 +428,19 @@ export async function localUpdateAdminListing(adminId: string, listingId: string
   const parsed = listingUpdateSchema.parse(input);
   const listing = assertFound(localState.listings.find((item) => item.listingId === listingId), "Listing not found.");
   Object.assign(listing, parsed, { updatedAt: nowIso() });
+  recordAdminEvent(adminId, "listing.update", {
+    listingId,
+    status: listing.status
+  });
   return clone(listing);
 }
 
 export async function localDeleteAdminListing(adminId: string, listingId: string) {
   assertLocalAdmin(adminId);
   localState.listings = localState.listings.filter((item) => item.listingId !== listingId);
+  recordAdminEvent(adminId, "listing.delete", {
+    listingId
+  });
   return { success: true as const };
 }
 
@@ -375,20 +461,55 @@ export async function localGetAdminAnalytics(userId: string): Promise<AdminAnaly
   };
 }
 
-export async function localGetAdminConversations(userId: string): Promise<AdminConversation[]> {
+export async function localGetAdminConversations(userId: string, query: unknown = {}) {
   assertLocalAdmin(userId);
-  return clone(localState.conversations);
+  const parsed = adminConversationListQuerySchema.parse(query);
+  const search = parsed.query?.trim().toLowerCase() ?? "";
+  const filtered = localState.conversations
+    .filter((conversation) => {
+      const queryPass =
+        !search ||
+        conversation.listingTitle.toLowerCase().includes(search) ||
+        conversation.buyer.name.toLowerCase().includes(search) ||
+        conversation.owner.name.toLowerCase().includes(search) ||
+        conversation.lastMessagePreview.toLowerCase().includes(search);
+      const listingPass = !parsed.listingId || conversation.listingId === parsed.listingId;
+      const ownerPass = !parsed.ownerId || conversation.owner.userId === parsed.ownerId;
+      const buyerPass = !parsed.buyerId || conversation.buyer.userId === parsed.buyerId;
+      return queryPass && listingPass && ownerPass && buyerPass;
+    })
+    .sort((left, right) => right.lastMessageAt.localeCompare(left.lastMessageAt));
+
+  return adminConversationsListResponseSchema.parse(paginateList(clone(filtered), parsed.limit, parsed.cursor));
 }
 
 export async function localDeleteAdminConversation(adminId: string, conversationId: string) {
   assertLocalAdmin(adminId);
   localState.conversations = localState.conversations.filter((item) => item.conversationId !== conversationId);
+  recordAdminEvent(adminId, "conversation.delete", {
+    conversationId
+  });
   return { success: true as const };
 }
 
-export async function localGetAdminSubscriptions(userId: string) {
+export async function localGetAdminSubscriptions(userId: string, query: unknown = {}) {
   assertLocalAdmin(userId);
-  return clone(localState.users);
+  const parsed = adminSubscriptionListQuerySchema.parse(query);
+  const search = parsed.query?.trim().toLowerCase() ?? "";
+  const filtered = localState.users
+    .filter((user) => {
+      const queryPass =
+        !search ||
+        user.name.toLowerCase().includes(search) ||
+        (user.email ?? "").toLowerCase().includes(search) ||
+        user.phone.toLowerCase().includes(search);
+      const statusPass = !parsed.subscriptionStatus || user.subscriptionStatus === parsed.subscriptionStatus;
+      const accessPass = parsed.isSubscribed === undefined || user.isSubscribed === parsed.isSubscribed;
+      return queryPass && statusPass && accessPass;
+    })
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+
+  return adminSubscriptionsListResponseSchema.parse(paginateList(clone(filtered), parsed.limit, parsed.cursor));
 }
 
 export async function localUpdateAdminSubscription(adminId: string, userId: string, input: unknown) {
@@ -396,6 +517,10 @@ export async function localUpdateAdminSubscription(adminId: string, userId: stri
   const parsed = adminSubscriptionUpdateSchema.parse(input);
   const user = assertFound(localState.users.find((item) => item.userId === userId), "User not found.");
   Object.assign(user, parsed, { updatedAt: nowIso() });
+  recordAdminEvent(adminId, "subscription.update", {
+    targetUserId: userId,
+    subscriptionStatus: user.subscriptionStatus
+  });
   return clone(user);
 }
 
@@ -410,12 +535,25 @@ export async function localUpdateAdminNotificationSettings(adminId: string, inpu
   assertLocalAdmin(adminId);
   const parsed = notificationSettingsSchema.partial().parse(input);
   Object.assign(localState.notificationSettings, parsed, { updatedAt: nowIso() });
+  recordAdminEvent(adminId, "notifications.update");
   return clone(localState.notificationSettings);
 }
 
-export async function localGetReports(userId: string) {
+export async function localGetReports(userId: string, query: unknown = {}) {
   assertLocalAdmin(userId);
-  return clone(localState.reports);
+  const parsed = adminReportListQuerySchema.parse(query);
+  const search = parsed.query?.trim().toLowerCase() ?? "";
+  const filtered = localState.reports
+    .filter((report) => {
+      const queryPass = !search || report.reason.toLowerCase().includes(search);
+      const statusPass = !parsed.status || report.status === parsed.status;
+      const listingPass = !parsed.listingId || report.listingId === parsed.listingId;
+      const userPass = !parsed.targetUserId || report.targetUserId === parsed.targetUserId;
+      return queryPass && statusPass && listingPass && userPass;
+    })
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+  return adminReportsListResponseSchema.parse(paginateList(clone(filtered), parsed.limit, parsed.cursor));
 }
 
 export async function localUpdateReport(adminId: string, reportId: string, input: unknown) {
@@ -426,6 +564,11 @@ export async function localUpdateReport(adminId: string, reportId: string, input
     status: parsed.status,
     resolutionNote: parsed.resolutionNote ?? null,
     updatedAt: nowIso()
+  });
+  recordAdminEvent(adminId, "report.update", {
+    reportId,
+    status: report.status,
+    resolutionNote: report.resolutionNote
   });
   return clone(report);
 }
@@ -444,4 +587,14 @@ export async function localCreateReport(userId: string, input: { listingId: stri
   };
   localState.reports.unshift(report);
   return clone(report);
+}
+
+export async function localGetAdminEvents(userId: string, query: unknown = {}) {
+  assertLocalAdmin(userId);
+  const parsed = adminEventListQuerySchema.parse(query);
+  const filtered = localState.adminEvents
+    .filter((event) => (!parsed.adminId || event.adminId === parsed.adminId) && (!parsed.action || event.action === parsed.action))
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+  return adminEventsListResponseSchema.parse(paginateList(clone(filtered), parsed.limit, parsed.cursor));
 }

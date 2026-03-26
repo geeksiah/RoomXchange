@@ -9,8 +9,6 @@ import {
   LayoutGrid,
   LogOut,
   MessageSquareText,
-  Search,
-  Settings2,
   Shield,
   Users
 } from "lucide-react";
@@ -138,18 +136,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
       <section className="admin-main">
         <header className="admin-topbar">
-          <label className="admin-search" aria-label="Search dashboard">
-            <Search size={18} color="var(--rx-text-muted)" />
-            <input placeholder="Search users, listings, reports..." />
-          </label>
-
           <div className="admin-toolbar">
-            <button className="admin-icon-button" type="button" aria-label="Notifications">
-              <Bell size={18} />
-            </button>
-            <button className="admin-icon-button" type="button" aria-label="Settings">
-              <Settings2 size={18} />
-            </button>
+            <span className="admin-topbar-note">Live control panel</span>
             <div className="admin-user-chip" style={{ background: "var(--rx-surface)", border: "1px solid var(--rx-border)", color: "var(--rx-text)" }}>
               <span className="admin-avatar" style={{ background: "var(--rx-accent-soft)", color: "var(--rx-accent)" }}>
                 {getInitials(firstName)}

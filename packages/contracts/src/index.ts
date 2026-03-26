@@ -431,6 +431,89 @@ export const adminConversationSchema = z.object({
   updatedAt: z.string()
 });
 
+export const adminUserListQuerySchema = z.object({
+  cursor: cursorSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  query: z.string().trim().min(1).max(160).optional(),
+  role: z.enum(userRoles).optional(),
+  accountStatus: z.enum(accountStatuses).optional(),
+  activity: z.enum(["has_listings", "no_listings", "subscribed"]).optional()
+});
+
+export const adminListingListQuerySchema = z.object({
+  cursor: cursorSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  query: z.string().trim().min(1).max(160).optional(),
+  status: z.enum(listingStatuses).optional(),
+  ownerId: z.string().uuid().optional()
+});
+
+export const adminReportListQuerySchema = z.object({
+  cursor: cursorSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  query: z.string().trim().min(1).max(160).optional(),
+  status: z.enum(reportStatuses).optional(),
+  listingId: z.string().uuid().optional(),
+  targetUserId: z.string().uuid().optional()
+});
+
+export const adminConversationListQuerySchema = z.object({
+  cursor: cursorSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  query: z.string().trim().min(1).max(160).optional(),
+  listingId: z.string().uuid().optional(),
+  ownerId: z.string().uuid().optional(),
+  buyerId: z.string().uuid().optional()
+});
+
+export const adminSubscriptionListQuerySchema = z.object({
+  cursor: cursorSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  query: z.string().trim().min(1).max(160).optional(),
+  subscriptionStatus: z.enum(subscriptionStatuses).optional(),
+  isSubscribed: z
+    .union([z.boolean(), z.string().transform((value) => value === "true")])
+    .optional()
+});
+
+export const adminEventSchema = z.object({
+  id: z.string().trim().min(1).max(200),
+  adminId: z.string().uuid(),
+  action: z.string().trim().min(1).max(80),
+  createdAt: z.string(),
+  targetUserId: z.string().uuid().nullable().optional(),
+  listingId: z.string().uuid().nullable().optional(),
+  conversationId: conversationIdSchema.nullable().optional(),
+  reportId: z.string().uuid().nullable().optional(),
+  role: z.enum(userRoles).nullable().optional(),
+  accountStatus: z.enum(accountStatuses).nullable().optional(),
+  subscriptionStatus: z.enum(subscriptionStatuses).nullable().optional(),
+  status: z.string().trim().min(1).max(40).nullable().optional(),
+  resolutionNote: z.string().trim().min(1).max(500).nullable().optional()
+});
+
+export const adminEventListQuerySchema = z.object({
+  cursor: cursorSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  action: z.string().trim().min(1).max(80).optional(),
+  adminId: z.string().uuid().optional()
+});
+
+function createPaginatedListSchema<Item extends z.ZodTypeAny>(itemSchema: Item) {
+  return z.object({
+    items: z.array(itemSchema),
+    nextCursor: z.string().nullable(),
+    total: z.number().int().nonnegative()
+  });
+}
+
+export const adminUsersListResponseSchema = createPaginatedListSchema(userProfileSchema);
+export const adminListingsListResponseSchema = createPaginatedListSchema(listingSchema);
+export const adminReportsListResponseSchema = createPaginatedListSchema(reportSchema);
+export const adminConversationsListResponseSchema = createPaginatedListSchema(adminConversationSchema);
+export const adminSubscriptionsListResponseSchema = createPaginatedListSchema(userProfileSchema);
+export const adminEventsListResponseSchema = createPaginatedListSchema(adminEventSchema);
+
 export const notificationSettingsSchema = z.object({
   pushEnabled: z.boolean(),
   messageNotificationsEnabled: z.boolean(),
@@ -561,6 +644,19 @@ export type FeedResponse = z.infer<typeof feedResponseSchema>;
 export type UserProfile = z.infer<typeof userProfileSchema>;
 export type AdminAnalytics = z.infer<typeof adminAnalyticsSchema>;
 export type AdminConversation = z.infer<typeof adminConversationSchema>;
+export type AdminUserListQuery = z.infer<typeof adminUserListQuerySchema>;
+export type AdminListingListQuery = z.infer<typeof adminListingListQuerySchema>;
+export type AdminReportListQuery = z.infer<typeof adminReportListQuerySchema>;
+export type AdminConversationListQuery = z.infer<typeof adminConversationListQuerySchema>;
+export type AdminSubscriptionListQuery = z.infer<typeof adminSubscriptionListQuerySchema>;
+export type AdminEvent = z.infer<typeof adminEventSchema>;
+export type AdminEventListQuery = z.infer<typeof adminEventListQuerySchema>;
+export type AdminUsersListResponse = z.infer<typeof adminUsersListResponseSchema>;
+export type AdminListingsListResponse = z.infer<typeof adminListingsListResponseSchema>;
+export type AdminReportsListResponse = z.infer<typeof adminReportsListResponseSchema>;
+export type AdminConversationsListResponse = z.infer<typeof adminConversationsListResponseSchema>;
+export type AdminSubscriptionsListResponse = z.infer<typeof adminSubscriptionsListResponseSchema>;
+export type AdminEventsListResponse = z.infer<typeof adminEventsListResponseSchema>;
 export type AuthSession = z.infer<typeof authSessionSchema>;
 export type UploadPresignResponse = z.infer<typeof uploadPresignResponseSchema>;
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;

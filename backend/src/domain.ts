@@ -136,6 +136,24 @@ export type NotificationSettingsItem = {
   updatedAt: string;
 };
 
+export type AdminEventItem = {
+  PK: string;
+  SK: string;
+  entity: "ADMIN_EVENT";
+  adminId: string;
+  action: string;
+  createdAt: string;
+  targetUserId?: string;
+  listingId?: string;
+  conversationId?: string;
+  reportId?: string;
+  role?: "member" | "moderator" | "admin" | "super_admin";
+  accountStatus?: "active" | "frozen" | "removed";
+  subscriptionStatus?: "inactive" | "active" | "past_due" | "expired" | "cancelled";
+  status?: string;
+  resolutionNote?: string | null;
+};
+
 export type UserNotificationItem = NotificationRecord & {
   PK: string;
   SK: string;

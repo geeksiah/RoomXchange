@@ -37,17 +37,17 @@ export function AuthPanel({ title = "Admin Sign In" }: { title?: string }) {
       <div className="admin-auth-card">
         <div className="admin-auth-badge">
           <ShieldCheck size={16} />
-          Admin only
+          Restricted access
         </div>
         <div className="admin-auth-copy">
           <h1>{title}</h1>
-          <p>Secure access to RoomXchange control.</p>
+          <p>Operational access for RoomXchange admins.</p>
         </div>
 
         <form className="admin-auth-form" onSubmit={submit}>
           <label className="admin-field">
             <span>Email</span>
-            <input placeholder="admin@roomxchange.dev" {...form.register("email")} />
+            <input placeholder="admin@roomxchange.com" {...form.register("email")} />
           </label>
           <label className="admin-field">
             <span>Password</span>

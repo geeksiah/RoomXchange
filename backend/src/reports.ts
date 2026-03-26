@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
-import { reportCreateSchema, reportUpdateSchema } from "@roomxchange/contracts";
+import { GetCommand, PutCommand, QueryCommand, ScanCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { adminReportListQuerySchema, adminReportsListResponseSchema, reportCreateSchema, reportUpdateSchema } from "@roomxchange/contracts";
 import { db } from "./aws.js";
 import { env } from "./config.js";
 import type { ReportItem, UserReportItem } from "./domain.js";
@@ -73,20 +73,53 @@ export async function getMyReports(userId: string) {
   return (result.Items ?? []) as UserReportItem[];
 }
 
-export async function getReports(status = "open") {
-  const result = await db.send(
-    new QueryCommand({
-      TableName: env.TABLE_NAME,
-      IndexName: "GSI1",
-      KeyConditionExpression: "GSI1PK = :pk",
-      ExpressionAttributeValues: {
-        ":pk": `REPORT_STATUS#${status.toUpperCase()}`
-      },
-      ScanIndexForward: false
-    })
-  );
+function paginateList<T>(items: T[], limit: number, cursor?: string) {
+  const start = cursor ? Number.parseInt(cursor, 10) || 0 : 0;
+  const sliced = items.slice(start, start + limit);
+  const nextCursor = start + limit < items.length ? String(start + limit) : null;
 
-  return (result.Items ?? []) as ReportItem[];
+  return {
+    items: sliced,
+    nextCursor,
+    total: items.length
+  };
+}
+
+export async function getReports(query: unknown = {}) {
+  const parsed = adminReportListQuerySchema.parse(query);
+  const search = parsed.query?.trim().toLowerCase() ?? "";
+
+  const result = parsed.status
+    ? await db.send(
+        new QueryCommand({
+          TableName: env.TABLE_NAME,
+          IndexName: "GSI1",
+          KeyConditionExpression: "GSI1PK = :pk",
+          ExpressionAttributeValues: {
+            ":pk": `REPORT_STATUS#${parsed.status.toUpperCase()}`
+          },
+          ScanIndexForward: false
+        })
+      )
+    : await db.send(
+        new ScanCommand({
+          TableName: env.TABLE_NAME,
+          FilterExpression: "#entity = :entity",
+          ExpressionAttributeNames: { "#entity": "entity" },
+          ExpressionAttributeValues: { ":entity": "REPORT" }
+        })
+      );
+
+  const filtered = ((result.Items ?? []) as ReportItem[])
+    .filter((report) => {
+      const queryPass = !search || report.reason.toLowerCase().includes(search);
+      const listingPass = !parsed.listingId || report.listingId === parsed.listingId;
+      const userPass = !parsed.targetUserId || report.targetUserId === parsed.targetUserId;
+      return queryPass && listingPass && userPass;
+    })
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+  return adminReportsListResponseSchema.parse(paginateList(filtered, parsed.limit, parsed.cursor));
 }
 
 export async function updateReport(reportId: string, adminId: string, input: unknown) {

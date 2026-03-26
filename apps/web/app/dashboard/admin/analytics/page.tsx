@@ -1,82 +1,88 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useSession } from "../../../../components/session-provider";
+import { useAdminAnalytics } from "../../../../components/admin/data";
+import { EmptyState, PageHeader, StatCard } from "../../../../components/admin/ui";
 
 export default function AdminAnalyticsPage() {
-  const { api, session } = useSession();
-  const analyticsQuery = useQuery({
-    queryKey: ["admin-analytics"],
-    queryFn: () => api.getAdminAnalytics(),
-    enabled: Boolean(session && session.user.role !== "member")
-  });
-
+  const analyticsQuery = useAdminAnalytics();
   const analytics = analyticsQuery.data;
 
   return (
     <section className="admin-workspace">
-      <div className="admin-page-head">
-        <div>
-          <h1>Analytics</h1>
-          <p>Core counts across users, listings, and moderation.</p>
-        </div>
-      </div>
+      <PageHeader title="Analytics" description="Operational totals only. No decorative charts." />
 
       <div className="admin-stats">
-        {[
-          ["Total users", analytics?.totalUsers ?? 0, "soft-accent"],
-          ["Active users", analytics?.activeUsers ?? 0, "soft-success"],
-          ["Published listings", analytics?.publishedListings ?? 0, "soft-info"],
-          ["Open reports", analytics?.openReports ?? 0, "soft-warning"]
-        ].map(([label, value, tone]) => (
-          <article className={`admin-stat-card ${tone}`} key={label}>
-            <span className="admin-stat-label">{label}</span>
-            <strong className="admin-stat-value">{value}</strong>
+        <StatCard label="Total users" tone="accent" value={analytics?.totalUsers ?? 0} />
+        <StatCard label="Active users" tone="success" value={analytics?.activeUsers ?? 0} />
+        <StatCard label="Published listings" tone="info" value={analytics?.publishedListings ?? 0} />
+        <StatCard label="Open reports" tone="warning" value={analytics?.openReports ?? 0} />
+      </div>
+
+      {analytics ? (
+        <div className="admin-three-column">
+          <article className="admin-panel">
+            <div className="admin-panel-head">
+              <h3>Accounts</h3>
+            </div>
+            <div className="admin-kpi-grid">
+              <div className="admin-kpi-tile">
+                <span>Frozen</span>
+                <strong>{analytics.frozenUsers}</strong>
+              </div>
+              <div className="admin-kpi-tile">
+                <span>Removed</span>
+                <strong>{analytics.removedUsers}</strong>
+              </div>
+              <div className="admin-kpi-tile">
+                <span>Admins</span>
+                <strong>{analytics.totalAdmins}</strong>
+              </div>
+            </div>
           </article>
-        ))}
-      </div>
 
-      <div className="admin-panels">
-        <article className="admin-panel">
-          <div className="admin-panel-head">
-            <h3>Accounts</h3>
-          </div>
-          <div className="admin-list">
-            <div className="admin-list-row">
-              <span>Frozen</span>
-              <span className="admin-tag">{analytics?.frozenUsers ?? 0}</span>
+          <article className="admin-panel">
+            <div className="admin-panel-head">
+              <h3>Listings</h3>
             </div>
-            <div className="admin-list-row">
-              <span>Removed</span>
-              <span className="admin-tag">{analytics?.removedUsers ?? 0}</span>
+            <div className="admin-kpi-grid">
+              <div className="admin-kpi-tile">
+                <span>Total</span>
+                <strong>{analytics.totalListings}</strong>
+              </div>
+              <div className="admin-kpi-tile">
+                <span>Published</span>
+                <strong>{analytics.publishedListings}</strong>
+              </div>
+              <div className="admin-kpi-tile">
+                <span>Archived</span>
+                <strong>{analytics.archivedListings}</strong>
+              </div>
             </div>
-            <div className="admin-list-row">
-              <span>Admins</span>
-              <span className="admin-tag">{analytics?.totalAdmins ?? 0}</span>
-            </div>
-          </div>
-        </article>
+          </article>
 
-        <article className="admin-panel">
-          <div className="admin-panel-head">
-            <h3>Listings and reports</h3>
-          </div>
-          <div className="admin-list">
-            <div className="admin-list-row">
-              <span>Archived listings</span>
-              <span className="admin-tag">{analytics?.archivedListings ?? 0}</span>
+          <article className="admin-panel">
+            <div className="admin-panel-head">
+              <h3>Moderation</h3>
             </div>
-            <div className="admin-list-row">
-              <span>Reviewing reports</span>
-              <span className="admin-tag">{analytics?.reviewingReports ?? 0}</span>
+            <div className="admin-kpi-grid">
+              <div className="admin-kpi-tile">
+                <span>Open</span>
+                <strong>{analytics.openReports}</strong>
+              </div>
+              <div className="admin-kpi-tile">
+                <span>Reviewing</span>
+                <strong>{analytics.reviewingReports}</strong>
+              </div>
+              <div className="admin-kpi-tile">
+                <span>Resolved</span>
+                <strong>{analytics.resolvedReports}</strong>
+              </div>
             </div>
-            <div className="admin-list-row">
-              <span>Resolved reports</span>
-              <span className="admin-tag">{analytics?.resolvedReports ?? 0}</span>
-            </div>
-          </div>
-        </article>
-      </div>
+          </article>
+        </div>
+      ) : (
+        <EmptyState title="Analytics unavailable" description="Real metrics will render here once the analytics endpoint responds." />
+      )}
     </section>
   );
 }

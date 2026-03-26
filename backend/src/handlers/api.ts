@@ -3,6 +3,7 @@ import { z } from "zod";
 import { adminLogin } from "../admin-auth.js";
 import {
   deleteAdminConversation,
+  getAdminEvents,
   deleteAdminListing,
   getAdminAnalytics,
   getAdminConversations,
@@ -43,6 +44,7 @@ import {
   localCreateReport,
   localGetAdminAnalytics,
   localGetAdminConversations,
+  localGetAdminEvents,
   localGetAdminListings,
   localGetAdminSubscriptions,
   localGetAdminUsers,
@@ -91,6 +93,7 @@ const routePatterns = [
   "/admin/users",
   "/admin/reports/{id}",
   "/admin/reports",
+  "/admin/events",
   "/admin/analytics",
   "/admin/auth/login",
   "/auth/password-reset/request",
@@ -459,10 +462,22 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }
 
       if (localAdminMode) {
-        return ok(await localGetReports(currentUserId));
+        return ok(await localGetReports(currentUserId, getQuery(event)));
       }
       await assertAdmin(currentUserId);
-      return ok(await getReports(event.queryStringParameters?.status ?? "open"));
+      return ok(await getReports(getQuery(event)));
+    }
+
+    if (resource === "/admin/events" && event.httpMethod === "GET") {
+      if (!currentUserId) {
+        throw new AppError(401, "Authentication is required.");
+      }
+
+      if (localAdminMode) {
+        return ok(await localGetAdminEvents(currentUserId, getQuery(event)));
+      }
+      await assertAdmin(currentUserId);
+      return ok(await getAdminEvents(getQuery(event)));
     }
 
     if (resource === "/admin/reports/{id}" && event.httpMethod === "PATCH") {
@@ -482,9 +497,9 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
         throw new AppError(401, "Authentication is required.");
       }
 
-      return ok(await (localAdminMode ? localGetAdminUsers(currentUserId) : (async () => {
+      return ok(await (localAdminMode ? localGetAdminUsers(currentUserId, getQuery(event)) : (async () => {
         await assertAdmin(currentUserId);
-        return getAdminUsers();
+        return getAdminUsers(getQuery(event));
       })()));
     }
 
@@ -506,10 +521,10 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }
 
       if (localAdminMode) {
-        return ok(await localGetAdminListings(currentUserId));
+        return ok(await localGetAdminListings(currentUserId, getQuery(event)));
       }
       await assertAdmin(currentUserId);
-      return ok(await getAdminListings());
+      return ok(await getAdminListings(getQuery(event)));
     }
 
     if (resource === "/admin/listings/{id}" && event.httpMethod === "PATCH") {
@@ -554,10 +569,10 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }
 
       if (localAdminMode) {
-        return ok(await localGetAdminConversations(currentUserId));
+        return ok(await localGetAdminConversations(currentUserId, getQuery(event)));
       }
       await assertAdmin(currentUserId);
-      return ok(await getAdminConversations());
+      return ok(await getAdminConversations(getQuery(event)));
     }
 
     if (resource === "/admin/conversations/{id}" && event.httpMethod === "DELETE") {
@@ -578,10 +593,10 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }
 
       if (localAdminMode) {
-        return ok(await localGetAdminSubscriptions(currentUserId));
+        return ok(await localGetAdminSubscriptions(currentUserId, getQuery(event)));
       }
       await assertAdmin(currentUserId);
-      return ok(await getAdminSubscriptions());
+      return ok(await getAdminSubscriptions(getQuery(event)));
     }
 
     if (resource === "/admin/subscriptions/{id}" && event.httpMethod === "PATCH") {
