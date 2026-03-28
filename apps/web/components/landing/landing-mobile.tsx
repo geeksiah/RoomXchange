@@ -85,7 +85,7 @@ export function LandingMobile({
             <h1 className={styles.mobileHeroTitle}>
               Find rooms.
               <br />
-              No agent fees.
+              <span className={styles.titleNoWrap}>No agent fees.</span>
             </h1>
             <div className={styles.mobileHeroParagraphs}>
               <p>{copy.eyebrow}</p>
@@ -100,11 +100,9 @@ export function LandingMobile({
 
           <div className={styles.mobileHeroVisual}>
             <Image alt="RoomXchange app preview in hand" className={styles.mobileHeroImage} priority src={heroImage} />
-            {donationEnabled ? (
-              <button className={styles.mobileFloatingDonate} onClick={onOpenEntry} type="button">
-                Donate
-              </button>
-            ) : null}
+            <button className={styles.mobileFloatingDonate} onClick={onOpenEntry} type="button">
+              Donate
+            </button>
           </div>
         </div>
       </section>

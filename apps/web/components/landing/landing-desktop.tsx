@@ -138,11 +138,9 @@ export function LandingDesktop({
       <section className={styles.heroSection} id="hero">
         <header className={styles.heroHeader}>
           <BrandLogo />
-          {donationEnabled ? (
-            <button className={styles.heroDonateButton} onClick={handleScrollToDonation} type="button">
-              Donate
-            </button>
-          ) : null}
+          <button className={styles.heroDonateButton} onClick={handleScrollToDonation} type="button">
+            Donate
+          </button>
         </header>
 
         <div className={styles.heroShell}>
@@ -151,7 +149,7 @@ export function LandingDesktop({
               <h1 className={styles.heroTitle}>
                 Find rooms.
                 <br />
-                No agent fees.
+                <span className={styles.titleNoWrap}>No agent fees.</span>
               </h1>
               <div className={styles.heroParagraphs}>
                 <p>{copy.eyebrow}</p>
@@ -169,48 +167,44 @@ export function LandingDesktop({
           </div>
         </div>
 
-        {donationEnabled ? (
-          <div className={styles.scrollBadgeDock}>
-            <ScrollIndicator onClick={handleScrollToDonation} />
-          </div>
-        ) : null}
+        <div className={styles.scrollBadgeDock}>
+          <ScrollIndicator onClick={handleScrollToDonation} />
+        </div>
       </section>
 
       <DisclaimerTicker text={disclaimerText} />
 
-      {donationEnabled ? (
-        <section className={styles.donationSection} id="support" ref={donationSectionRef}>
-          <div className={styles.donationShell}>
-            <div className={`${styles.donationHeading} ${styles.revealItem}`} data-reveal>
-              <h2 className={styles.donationTitle}>
-                Help us keep RoomXchange <span>free forever</span>
-              </h2>
-              <p>{copy.donationSupport}</p>
+      <section className={styles.donationSection} id="support" ref={donationSectionRef}>
+        <div className={styles.donationShell}>
+          <div className={`${styles.donationHeading} ${styles.revealItem}`} data-reveal>
+            <h2 className={styles.donationTitle}>
+              Help us keep RoomXchange <span>free forever</span>
+            </h2>
+            <p>{copy.donationSupport}</p>
+          </div>
+
+          <div className={styles.donationGrid}>
+            <div className={`${styles.donationDeviceWrap} ${styles.revealItem}`} data-parallax-speed="0.18" data-reveal>
+              <Image alt="RoomXchange explore screen" className={styles.donationDeviceImage} src={desktopDonationImage} />
             </div>
 
-            <div className={styles.donationGrid}>
-              <div className={`${styles.donationDeviceWrap} ${styles.revealItem}`} data-parallax-speed="0.18" data-reveal>
-                <Image alt="RoomXchange explore screen" className={styles.donationDeviceImage} src={desktopDonationImage} />
-              </div>
-
-              <div className={`${styles.donationCardColumn} ${styles.revealItem}`} data-parallax-speed="0.08" data-reveal>
-                {donationSuccess ? (
-                  <DesktopSuccessCard copy={copy} donateUrl={donateUrl} socialLinks={socialLinks} />
-                ) : (
-                  <DonationCard
-                    customAmount={customAmount}
-                    donateUrl={donateUrl}
-                    onCustomAmountChange={onCustomAmountChange}
-                    onPresetAmount={onPresetAmount}
-                    selectedAmount={selectedAmount}
-                    supportAmounts={supportAmounts}
-                  />
-                )}
-              </div>
+            <div className={`${styles.donationCardColumn} ${styles.revealItem}`} data-parallax-speed="0.08" data-reveal>
+              {donationSuccess ? (
+                <DesktopSuccessCard copy={copy} donateUrl={donateUrl} socialLinks={socialLinks} />
+              ) : (
+                <DonationCard
+                  customAmount={customAmount}
+                  donateUrl={donateUrl}
+                  onCustomAmountChange={onCustomAmountChange}
+                  onPresetAmount={onPresetAmount}
+                  selectedAmount={selectedAmount}
+                  supportAmounts={supportAmounts}
+                />
+              )}
             </div>
           </div>
-        </section>
-      ) : null}
+        </div>
+      </section>
 
       <section className={styles.footerSection}>
         <div className={styles.footerShell}>
@@ -219,7 +213,7 @@ export function LandingDesktop({
               <h2 className={styles.footerTitle}>
                 Find rooms.
                 <br />
-                No agent fees.
+                <span className={styles.titleNoWrap}>No agent fees.</span>
               </h2>
               <div className={styles.footerParagraphs}>
                 <p>{copy.eyebrow}</p>

@@ -117,7 +117,7 @@ export function ScrollIndicator({ onClick }: { onClick: () => void }) {
         </defs>
         <text>
           <textPath href="#landing-scroll-ring" startOffset="0%">
-            scroll down to donate • scroll down to donate •
+            scroll down to donate / scroll down to donate /
           </textPath>
         </text>
       </svg>

@@ -131,7 +131,7 @@ function LandingPageContent() {
   const normalizedSupportAmounts = supportAmounts.length ? supportAmounts : fallbackSupportAmounts;
   const donationProvider = settings.donationProvider?.trim() || null;
   const donationBaseUrl = settings.donationUrl?.trim() || envSupportUrl;
-  const donationEnabled = Boolean(donationProvider && donationBaseUrl);
+  const donationEnabled = true;
   const desktopNumericAmount = Number((desktopCustomAmount || String(desktopSelectedAmount)).replace(/[^\d]/g, "")) || 0;
   const mobileNumericAmount = Number(mobileAmountDigits.replace(/[^\d]/g, "")) || 0;
   const desktopDonateUrl = buildDonationUrl(donationBaseUrl, donationProvider, desktopNumericAmount);
@@ -144,11 +144,8 @@ function LandingPageContent() {
   }, [pathname, router, searchParams]);
 
   const handleOpenMobileEntry = useCallback(() => {
-    if (!donationEnabled) {
-      return;
-    }
     setMobileScreen("entry");
-  }, [donationEnabled]);
+  }, []);
 
   const handleCloseMobileEntry = useCallback(() => {
     setMobileScreen("landing");
