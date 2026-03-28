@@ -34,7 +34,7 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true
   },
-  plugins: ["expo-router", "expo-notifications", "expo-secure-store"],
+  plugins: ["expo-router", "expo-notifications", "expo-secure-store", "./plugins/with-monorepo-android-bundle"],
   extra: {
     eas: {
       projectId: "77748195-a71f-4a62-90f6-0cd7ecde03ef"

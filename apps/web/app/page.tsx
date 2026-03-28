@@ -72,6 +72,7 @@ function SocialLinks() {
 
 function LandingPageContent() {
   const searchParams = useSearchParams();
+  const apiBaseUrl = roomXchangeConfig.apiUrl || process.env.NEXT_PUBLIC_ROOMXCHANGE_API_URL || "";
   const playStoreUrl = (process.env.NEXT_PUBLIC_ROOMXCHANGE_PLAYSTORE_URL ?? "").trim() || null;
   const appStoreUrl = (process.env.NEXT_PUBLIC_ROOMXCHANGE_APPSTORE_URL ?? "").trim() || null;
   const envSupportUrl = (process.env.NEXT_PUBLIC_ROOMXCHANGE_SUPPORT_URL ?? "").trim() || null;
@@ -88,9 +89,11 @@ function LandingPageContent() {
   const [customAmount, setCustomAmount] = useState("");
 
   useEffect(() => {
-    const api = createApiClient({
-      baseUrl: roomXchangeConfig.apiUrl || process.env.NEXT_PUBLIC_ROOMXCHANGE_API_URL || ""
-    });
+    if (!apiBaseUrl) {
+      return;
+    }
+
+    const api = createApiClient({ baseUrl: apiBaseUrl });
     let active = true;
 
     api
@@ -100,12 +103,18 @@ function LandingPageContent() {
           return;
         }
 
+        const presetAmounts = Array.isArray(nextSettings.donationPresetAmounts)
+          ? nextSettings.donationPresetAmounts.filter((amount) => Number.isFinite(amount) && amount > 0)
+          : [];
+        const normalizedPresetAmounts = presetAmounts.length ? presetAmounts : fallbackSupportAmounts;
+
         setSettings({
           ...nextSettings,
+          donationPresetAmounts: normalizedPresetAmounts,
           donationUrl: nextSettings.donationUrl ?? envSupportUrl
         });
-        if (!customAmount && nextSettings.donationPresetAmounts.length) {
-          setSelectedAmount(nextSettings.donationPresetAmounts[0] ?? 200);
+        if (!customAmount) {
+          setSelectedAmount(normalizedPresetAmounts[0] ?? 200);
         }
       })
       .catch(() => {});
@@ -113,10 +122,13 @@ function LandingPageContent() {
     return () => {
       active = false;
     };
-  }, [envSupportUrl]);
+  }, [apiBaseUrl, envSupportUrl]);
 
   const donationSuccess = searchParams.get("donation") === "success";
-  const supportAmounts = settings.donationPresetAmounts.length ? settings.donationPresetAmounts : fallbackSupportAmounts;
+  const supportAmounts = (Array.isArray(settings.donationPresetAmounts) ? settings.donationPresetAmounts : fallbackSupportAmounts).filter((amount) =>
+    Number.isFinite(amount) && amount > 0
+  );
+  const normalizedSupportAmounts = supportAmounts.length ? supportAmounts : fallbackSupportAmounts;
   const displayAmount = customAmount || String(selectedAmount);
   const numericAmount = Number(displayAmount.replace(/[^\d]/g, ""));
   const donationProvider = settings.donationProvider?.trim() || null;
@@ -143,7 +155,7 @@ function LandingPageContent() {
     }
   }, [donationBaseUrl, donationEnabled, donationProvider, numericAmount]);
 
-  const quickAmounts = supportAmounts.slice(0, 5);
+  const quickAmounts = normalizedSupportAmounts.slice(0, 5);
 
   return (
     <main className="landing-page">
