@@ -10,8 +10,25 @@ import { type SocialLink } from "./landing-shared";
 import { useAdaptiveMode, useBodyScrollLock, useReducedMotionSafe } from "./hooks";
 import styles from "./landing.module.css";
 
-const fallbackSupportAmounts = [50, 100, 200, 500, 1000];
+const fallbackSupportAmounts = [50, 100, 200, 500];
 const mobileQuickAmounts = [50, 100, 200, 500];
+
+type PaystackWindow = Window & {
+  PaystackPop?: {
+    setup: (options: {
+      key: string;
+      email: string;
+      amount: number;
+      currency: string;
+      ref: string;
+      metadata?: Record<string, unknown>;
+      callback?: (response: { reference: string }) => void;
+      onClose?: () => void;
+    }) => {
+      openIframe: () => void;
+    };
+  };
+};
 
 const marketingCopy = {
   eyebrow: "Find rooms directly from owners and ex-tenants.",
@@ -45,7 +62,11 @@ function buildDonationUrl(baseUrl: string | null, provider: string | null, amoun
   }
 }
 
-function LandingPageContent() {
+function buildDonationReference() {
+  return `don_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function LandingPageContent({ paystackPublicKey }: { paystackPublicKey: string | null }) {
   const { isMobile, desktopTier } = useAdaptiveMode();
   const prefersReducedMotion = useReducedMotionSafe();
   const searchParams = useSearchParams();
@@ -131,11 +152,14 @@ function LandingPageContent() {
   const normalizedSupportAmounts = supportAmounts.length ? supportAmounts : fallbackSupportAmounts;
   const donationProvider = settings.donationProvider?.trim() || null;
   const donationBaseUrl = settings.donationUrl?.trim() || envSupportUrl;
-  const donationEnabled = true;
+  const paystackEnabled = donationProvider?.toLowerCase() === "paystack" && Boolean(paystackPublicKey);
+  const donationEnabled = paystackEnabled || Boolean(donationBaseUrl);
   const desktopNumericAmount = Number((desktopCustomAmount || String(desktopSelectedAmount)).replace(/[^\d]/g, "")) || 0;
   const mobileNumericAmount = Number(mobileAmountDigits.replace(/[^\d]/g, "")) || 0;
   const desktopDonateUrl = buildDonationUrl(donationBaseUrl, donationProvider, desktopNumericAmount);
   const mobileDonateUrl = buildDonationUrl(donationBaseUrl, donationProvider, mobileNumericAmount);
+  const desktopSupportAmounts = normalizedSupportAmounts.filter((amount) => amount !== 1000).slice(0, 4);
+  const mobileSupportAmounts = mobileQuickAmounts.filter((amount) => amount !== 1000);
 
   const clearSuccessQuery = useCallback(() => {
     if (searchParams.get("donation") === "success") {
@@ -161,6 +185,77 @@ function LandingPageContent() {
     setMobileScreen("entry");
   }, [clearSuccessQuery]);
 
+  const handleDonationSuccess = useCallback(
+    (reference: string) => {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("donation", "success");
+      nextParams.set("reference", reference);
+      router.replace(`${pathname}?${nextParams.toString()}` as Route, { scroll: false });
+      if (isMobile) {
+        setMobileScreen("success");
+      }
+    },
+    [isMobile, pathname, router, searchParams]
+  );
+
+  const openPaystackCheckout = useCallback(
+    (amount: number) => {
+      const normalizedAmount = Math.max(0, Math.trunc(amount));
+      if (!paystackPublicKey || !normalizedAmount || typeof window === "undefined") {
+        return false;
+      }
+
+      const paystack = (window as PaystackWindow).PaystackPop;
+      if (!paystack) {
+        return false;
+      }
+
+      const reference = buildDonationReference();
+      const handler = paystack.setup({
+        key: paystackPublicKey,
+        email: `donor+${reference}@roomxchange.app`,
+        amount: normalizedAmount * 100,
+        currency: "GHS",
+        ref: reference,
+        metadata: {
+          source: "landing-page",
+          amount: normalizedAmount,
+          donationProvider
+        },
+        callback: ({ reference: paymentReference }) => {
+          handleDonationSuccess(paymentReference);
+        }
+      });
+
+      handler.openIframe();
+      return true;
+    },
+    [donationProvider, handleDonationSuccess, paystackPublicKey]
+  );
+
+  const runFallbackDonationRedirect = useCallback((href: string | null) => {
+    if (!href || typeof window === "undefined") {
+      return false;
+    }
+
+    window.location.href = href;
+    return true;
+  }, []);
+
+  const handleDesktopDonate = useCallback(() => {
+    if (openPaystackCheckout(desktopNumericAmount)) {
+      return;
+    }
+    void runFallbackDonationRedirect(desktopDonateUrl);
+  }, [desktopDonateUrl, desktopNumericAmount, openPaystackCheckout, runFallbackDonationRedirect]);
+
+  const handleMobileDonate = useCallback(() => {
+    if (openPaystackCheckout(mobileNumericAmount)) {
+      return;
+    }
+    void runFallbackDonationRedirect(mobileDonateUrl);
+  }, [mobileDonateUrl, mobileNumericAmount, openPaystackCheckout, runFallbackDonationRedirect]);
+
   const handleMobilePreset = useCallback((amount: number) => {
     setMobileAmountDigits(String(amount));
   }, []);
@@ -185,14 +280,14 @@ function LandingPageContent() {
         appStoreUrl={appStoreUrl}
         copy={marketingCopy}
         disclaimerText={disclaimerText}
-        donateUrl={mobileDonateUrl}
         donationEnabled={donationEnabled}
         mobileAmountDigits={mobileAmountDigits}
-        mobileQuickAmounts={mobileQuickAmounts}
+        mobileQuickAmounts={mobileSupportAmounts}
         onCloseEntry={handleCloseMobileEntry}
         onCloseSuccess={handleCloseMobileSuccess}
         onDeleteDigit={handleMobileDelete}
         onDonateAgain={handleDonateAgain}
+        onDonateNow={handleMobileDonate}
         onOpenEntry={handleOpenMobileEntry}
         onPresetAmount={handleMobilePreset}
         onPressDigit={handleMobileDigit}
@@ -211,10 +306,10 @@ function LandingPageContent() {
       customAmount={desktopCustomAmount}
       desktopTier={desktopTier}
       disclaimerText={disclaimerText}
-      donateUrl={desktopDonateUrl}
       donationEnabled={donationEnabled}
       donationSuccess={donationSuccess}
       onCustomAmountChange={setDesktopCustomAmount}
+      onDonateNow={handleDesktopDonate}
       onPresetAmount={(amount) => {
         setDesktopSelectedAmount(amount);
         setDesktopCustomAmount("");
@@ -223,7 +318,7 @@ function LandingPageContent() {
       prefersReducedMotion={prefersReducedMotion}
       selectedAmount={desktopCustomAmount ? null : desktopSelectedAmount}
       socialLinks={socialLinks}
-      supportAmounts={normalizedSupportAmounts}
+      supportAmounts={desktopSupportAmounts}
     />
   );
 }
@@ -240,10 +335,10 @@ export function LandingPageFallback() {
   );
 }
 
-export function LandingPageController() {
+export function LandingPageController({ paystackPublicKey }: { paystackPublicKey: string | null }) {
   return (
     <Suspense fallback={<LandingPageFallback />}>
-      <LandingPageContent />
+      <LandingPageContent paystackPublicKey={paystackPublicKey} />
     </Suspense>
   );
 }

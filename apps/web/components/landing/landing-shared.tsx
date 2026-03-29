@@ -66,14 +66,14 @@ export function StoreButton({ href, tone, store, stacked = false }: StoreButtonP
 
   if (!href) {
     return (
-      <span aria-disabled="true" className={`${className} ${styles.storeButtonDisabled}`}>
+      <span aria-disabled="true" className={`${className} ${styles.storeButtonDisabled}`} data-store={store} data-tone={tone}>
         {content}
       </span>
     );
   }
 
   return (
-    <a className={className} href={href} rel="noreferrer" target="_blank">
+    <a className={className} data-store={store} data-tone={tone} href={href} rel="noreferrer" target="_blank">
       {content}
     </a>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import desktopDonationImage from "../../app/assets/desktop-donation-image.png";
@@ -25,10 +25,10 @@ type LandingDesktopProps = {
   customAmount: string;
   desktopTier: "compact" | "medium" | "wide";
   disclaimerText: string;
-  donateUrl: string | null;
   donationEnabled: boolean;
   donationSuccess: boolean;
   onCustomAmountChange: (value: string) => void;
+  onDonateNow: () => void;
   onPresetAmount: (amount: number) => void;
   playStoreUrl: string | null;
   prefersReducedMotion: boolean;
@@ -37,30 +37,28 @@ type LandingDesktopProps = {
   supportAmounts: number[];
 };
 
-function PrimaryDonateButton({ href, label }: { href: string | null; label: string }) {
-  if (!href) {
-    return <span className={`${styles.primaryCta} ${styles.primaryCtaDisabled}`}>{label}</span>;
-  }
-
+function PrimaryDonateButton({ enabled, label, onClick }: { enabled: boolean; label: string; onClick: () => void }) {
   return (
-    <a className={styles.primaryCta} href={href}>
+    <button className={`${styles.primaryCta} ${!enabled ? styles.primaryCtaDisabled : ""}`} disabled={!enabled} onClick={onClick} type="button">
       <span>{label}</span>
       <ArrowRight size={18} strokeWidth={2.5} />
-    </a>
+    </button>
   );
 }
 
 function DonationCard({
   customAmount,
-  donateUrl,
+  donationEnabled,
   onCustomAmountChange,
+  onDonateNow,
   onPresetAmount,
   selectedAmount,
   supportAmounts
 }: {
   customAmount: string;
-  donateUrl: string | null;
+  donationEnabled: boolean;
   onCustomAmountChange: (value: string) => void;
+  onDonateNow: () => void;
   onPresetAmount: (amount: number) => void;
   selectedAmount: number | null;
   supportAmounts: number[];
@@ -86,12 +84,22 @@ function DonationCard({
         </span>
       </label>
 
-      <PrimaryDonateButton href={donateUrl} label="Donate now" />
+      <PrimaryDonateButton enabled={donationEnabled} label="Donate now" onClick={onDonateNow} />
     </div>
   );
 }
 
-function DesktopSuccessCard({ donateUrl, socialLinks, copy }: { donateUrl: string | null; socialLinks: SocialLink[]; copy: CopyBlock }) {
+function DesktopSuccessCard({
+  copy,
+  donationEnabled,
+  onDonateNow,
+  socialLinks
+}: {
+  copy: CopyBlock;
+  donationEnabled: boolean;
+  onDonateNow: () => void;
+  socialLinks: SocialLink[];
+}) {
   return (
     <div className={`${styles.desktopDonationCard} ${styles.desktopSuccessCard}`}>
       <Image alt="Donation success" className={styles.desktopSuccessIcon} src={donationSuccessIcon} />
@@ -101,7 +109,7 @@ function DesktopSuccessCard({ donateUrl, socialLinks, copy }: { donateUrl: strin
         <p>{copy.successImpact}</p>
       </div>
       <SocialLinks links={socialLinks} />
-      <PrimaryDonateButton href={donateUrl} label="Donate again" />
+      <PrimaryDonateButton enabled={donationEnabled} label="Donate again" onClick={onDonateNow} />
     </div>
   );
 }
@@ -112,10 +120,10 @@ export function LandingDesktop({
   customAmount,
   desktopTier,
   disclaimerText,
-  donateUrl,
   donationEnabled,
   donationSuccess,
   onCustomAmountChange,
+  onDonateNow,
   onPresetAmount,
   playStoreUrl,
   prefersReducedMotion,
@@ -125,6 +133,17 @@ export function LandingDesktop({
 }: LandingDesktopProps) {
   const motionRef = useDesktopMotion(prefersReducedMotion);
   const donationSectionRef = useRef<HTMLElement | null>(null);
+  const [headerSolid, setHeaderSolid] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setHeaderSolid(window.scrollY > Math.max(48, window.innerHeight * 0.15));
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const handleScrollToDonation = useCallback(() => {
     donationSectionRef.current?.scrollIntoView({
@@ -135,14 +154,16 @@ export function LandingDesktop({
 
   return (
     <main className={styles.desktopRoot} data-tier={desktopTier} ref={motionRef}>
-      <section className={styles.heroSection} id="hero">
+      <div className={`${styles.desktopStickyHeader} ${headerSolid ? styles.desktopStickyHeaderSolid : ""}`}>
         <header className={styles.heroHeader}>
           <BrandLogo />
           <button className={styles.heroDonateButton} onClick={handleScrollToDonation} type="button">
             Donate
           </button>
         </header>
+      </div>
 
+      <section className={styles.heroSection} id="hero">
         <div className={styles.heroShell}>
           <div className={styles.heroGrid}>
             <div className={`${styles.heroCopyBlock} ${styles.revealItem}`} data-parallax-speed="0.14" data-reveal>
@@ -190,12 +211,13 @@ export function LandingDesktop({
 
             <div className={`${styles.donationCardColumn} ${styles.revealItem}`} data-parallax-speed="0.08" data-reveal>
               {donationSuccess ? (
-                <DesktopSuccessCard copy={copy} donateUrl={donateUrl} socialLinks={socialLinks} />
+                <DesktopSuccessCard copy={copy} donationEnabled={donationEnabled} onDonateNow={onDonateNow} socialLinks={socialLinks} />
               ) : (
                 <DonationCard
                   customAmount={customAmount}
-                  donateUrl={donateUrl}
+                  donationEnabled={donationEnabled}
                   onCustomAmountChange={onCustomAmountChange}
+                  onDonateNow={onDonateNow}
                   onPresetAmount={onPresetAmount}
                   selectedAmount={selectedAmount}
                   supportAmounts={supportAmounts}

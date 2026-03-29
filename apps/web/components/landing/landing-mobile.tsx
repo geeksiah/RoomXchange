@@ -21,7 +21,6 @@ type LandingMobileProps = {
   appStoreUrl: string | null;
   copy: CopyBlock;
   disclaimerText: string;
-  donateUrl: string | null;
   donationEnabled: boolean;
   mobileAmountDigits: string;
   mobileQuickAmounts: number[];
@@ -29,6 +28,7 @@ type LandingMobileProps = {
   onCloseSuccess: () => void;
   onDeleteDigit: () => void;
   onDonateAgain: () => void;
+  onDonateNow: () => void;
   onOpenEntry: () => void;
   onPresetAmount: (amount: number) => void;
   onPressDigit: (digit: string) => void;
@@ -38,15 +38,11 @@ type LandingMobileProps = {
   socialLinks: SocialLink[];
 };
 
-function MobileDonateButton({ href }: { href: string | null }) {
-  if (!href) {
-    return <span className={`${styles.mobilePrimaryCta} ${styles.primaryCtaDisabled}`}>Donate now</span>;
-  }
-
+function MobileDonateButton({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
   return (
-    <a className={styles.mobilePrimaryCta} href={href}>
+    <button className={`${styles.mobilePrimaryCta} ${!enabled ? styles.primaryCtaDisabled : ""}`} disabled={!enabled} onClick={onClick} type="button">
       Donate now
-    </a>
+    </button>
   );
 }
 
@@ -54,7 +50,6 @@ export function LandingMobile({
   appStoreUrl,
   copy,
   disclaimerText,
-  donateUrl,
   donationEnabled,
   mobileAmountDigits,
   mobileQuickAmounts,
@@ -62,6 +57,7 @@ export function LandingMobile({
   onCloseSuccess,
   onDeleteDigit,
   onDonateAgain,
+  onDonateNow,
   onOpenEntry,
   onPresetAmount,
   onPressDigit,
@@ -116,7 +112,10 @@ export function LandingMobile({
 
             <div className={styles.mobileAmountHeader}>
               <h2>Enter custom amount</h2>
-              <div className={styles.mobileAmountDisplay}>GHS {mobileAmountDigits}</div>
+              <div className={styles.mobileAmountDisplay}>
+                <span className={styles.mobileAmountCurrency}>GHS</span>
+                <span>{mobileAmountDigits}</span>
+              </div>
               <span className={styles.mobileAmountUnderline} />
             </div>
 
@@ -125,7 +124,7 @@ export function LandingMobile({
             <NumericKeypad onDelete={onDeleteDigit} onDigit={onPressDigit} />
 
             <div className={styles.mobileOverlayFooter}>
-              <MobileDonateButton href={donateUrl} />
+              <MobileDonateButton enabled={donationEnabled} onClick={onDonateNow} />
             </div>
           </div>
         </div>

@@ -83,8 +83,8 @@ export function useDesktopMotion(disabled: boolean) {
         });
       },
       {
-        threshold: 0.18,
-        rootMargin: "0px 0px -6% 0px"
+        threshold: 0.12,
+        rootMargin: "0px 0px -8% 0px"
       }
     );
 
@@ -101,7 +101,7 @@ export function useDesktopMotion(disabled: boolean) {
         const nodeCenter = rect.top + rect.height / 2;
         const distanceFromCenter = nodeCenter - viewportCenter;
         const speed = Number(node.dataset.parallaxSpeed ?? 0);
-        const offset = distanceFromCenter * speed * -0.18;
+        const offset = distanceFromCenter * speed * -0.12;
         node.style.setProperty("--landing-parallax-y", `${offset.toFixed(2)}px`);
       });
     };
