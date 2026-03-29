@@ -268,6 +268,13 @@ export class RoomXchangeStack extends Stack {
     const auth = api.root.addResource("auth");
     auth.addResource("request-otp").addMethod("POST", integration);
     auth.addResource("verify-otp").addMethod("POST", integration);
+    auth.addResource("login").addMethod("POST", integration);
+    const passwordReset = auth.addResource("password-reset");
+    passwordReset.addResource("request").addMethod("POST", integration);
+    passwordReset.addResource("verify").addMethod("POST", integration);
+    const signup = auth.addResource("signup");
+    signup.addResource("request").addMethod("POST", integration);
+    signup.addResource("verify").addMethod("POST", integration);
     api.root.addResource("app").addResource("notification-settings").addMethod("GET", integration);
 
     const listings = api.root.addResource("listings");
