@@ -580,13 +580,13 @@
   min-height: 100%;
   display: grid;
   align-content: center;
-  padding: clamp(24px, 4vh, 36px) clamp(32px, 4vw, 56px) 0;
+  padding: clamp(18px, 3.2vh, 28px) clamp(32px, 4vw, 56px) 0;
   box-sizing: border-box;
 }
 
 .donationTitle {
   margin: 0;
-  font-size: clamp(2.9rem, 4vw, 4.15rem);
+  font-size: clamp(2.48rem, 3.5vw, 3.72rem);
   line-height: 0.98;
   letter-spacing: -0.04em;
   word-spacing: 0.1em;
@@ -612,7 +612,7 @@
 
 .donationGrid {
   display: grid;
-  grid-template-columns: minmax(320px, 0.82fr) minmax(440px, 1.02fr);
+  grid-template-columns: minmax(360px, 0.9fr) minmax(0, 0.98fr);
   align-items: end;
   gap: clamp(28px, 4vw, 60px);
   margin-top: 0;
@@ -628,11 +628,11 @@
 
 .donationDeviceImage {
   width: 100%;
-  max-width: 490px;
+  max-width: 560px;
   height: auto;
-  max-height: calc(100svh - 130px);
+  max-height: calc(100svh - 84px);
   object-fit: contain;
-  transform: translateY(102px);
+  transform: translateY(124px);
 }
 
 .donationContentColumn {
@@ -640,11 +640,13 @@
   align-content: center;
   gap: 24px;
   min-height: 100%;
+  min-width: 0;
 }
 
 .donationHeadingInline {
   display: grid;
   gap: 10px;
+  min-width: 0;
 }
 
 .donationHeadingInline p {
@@ -809,7 +811,7 @@
   margin-left: clamp(28px, 7vw, 102px);
   padding: 32px 0;
   display: grid;
-  gap: 22px;
+  gap: 30px;
 }
 
 .footerTitle {
@@ -822,7 +824,7 @@
 
 .footerParagraphs {
   display: grid;
-  gap: 14px;
+  gap: 18px;
 }
 
 .footerParagraphs p {
@@ -834,7 +836,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  margin-top: 2px;
+  margin-top: 8px;
 }
 
 .footerVisualWrap {
@@ -1021,7 +1023,7 @@
   padding: calc(24px + env(safe-area-inset-top)) 24px calc(12px + env(safe-area-inset-bottom));
   display: grid;
   grid-template-rows: auto auto auto 1fr auto;
-  gap: 14px;
+  gap: 10px;
   transition: transform 280ms var(--landing-ease), opacity 280ms var(--landing-ease);
   box-sizing: border-box;
   overflow: hidden;
@@ -1052,8 +1054,8 @@
 .mobileAmountHeader {
   display: grid;
   justify-items: center;
-  gap: 12px;
-  padding-top: 8px;
+  gap: 10px;
+  padding-top: 4px;
 }
 
 .mobileAmountHeader h2,
@@ -1091,8 +1093,38 @@
   background: rgba(255, 59, 99, 0.72);
 }
 
+.mobileOverlayInner > .amountPillsCompact {
+  margin-top: 2px;
+}
+
+.mobileOverlay .amountPillsCompact {
+  gap: 10px;
+  padding-bottom: 2px;
+}
+
+.mobileOverlay .amountPill {
+  min-height: 46px;
+  padding: 0 16px;
+  font-size: 0.96rem;
+}
+
+.mobileOverlay .numericKeypad {
+  gap: 7px;
+  margin-top: 4px;
+}
+
+.mobileOverlay .keypadKey,
+.mobileOverlay .keypadSpacer {
+  min-height: 46px;
+  border-radius: 14px;
+}
+
+.mobileOverlay .keypadKey {
+  font-size: 1rem;
+}
+
 .mobileOverlayFooter {
-  padding-top: 8px;
+  padding-top: 12px;
   padding-bottom: max(4px, env(safe-area-inset-bottom));
   position: relative;
   z-index: 2;
