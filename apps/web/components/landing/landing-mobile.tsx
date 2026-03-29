@@ -136,21 +136,23 @@ export function LandingMobile({
               <ArrowLeft size={26} strokeWidth={2.5} />
             </button>
 
-            <div className={styles.mobileAmountHeader}>
-              <h2>Enter custom amount</h2>
-              <div className={`${styles.mobileAmountDisplay} ${!hasMobileAmount ? styles.mobileAmountDisplayPlaceholder : ""}`}>
-                <span className={styles.mobileAmountCurrency}>GHS</span>
-                <span>{hasMobileAmount ? mobileAmountDigits : "2000"}</span>
+            <div className={styles.mobileEntryBody}>
+              <div className={styles.mobileAmountHeader}>
+                <h2>Enter custom amount</h2>
+                <div className={`${styles.mobileAmountDisplay} ${!hasMobileAmount ? styles.mobileAmountDisplayPlaceholder : ""}`}>
+                  <span className={styles.mobileAmountCurrency}>GHS</span>
+                  <span>{hasMobileAmount ? mobileAmountDigits : "2000"}</span>
+                </div>
+                <span className={styles.mobileAmountUnderline} />
               </div>
-              <span className={styles.mobileAmountUnderline} />
-            </div>
 
-            <div className={styles.mobileEntryAmountsGroup}>
-              <AmountPills amounts={mobileQuickAmounts} compact onSelect={onPresetAmount} selectedAmount={selectedQuickAmount} />
-            </div>
+              <div className={styles.mobileEntryAmountsGroup}>
+                <AmountPills amounts={mobileQuickAmounts} compact onSelect={onPresetAmount} selectedAmount={selectedQuickAmount} />
+              </div>
 
-            <div className={styles.mobileEntryKeypadGroup}>
-              <NumericKeypad onDelete={onDeleteDigit} onDigit={onPressDigit} />
+              <div className={styles.mobileEntryKeypadGroup}>
+                <NumericKeypad onDelete={onDeleteDigit} onDigit={onPressDigit} />
+              </div>
             </div>
 
             <div className={styles.mobileOverlayFooter}>

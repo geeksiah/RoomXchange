@@ -1024,8 +1024,8 @@
   height: 100svh;
   padding: calc(24px + env(safe-area-inset-top)) 24px calc(12px + env(safe-area-inset-bottom));
   display: grid;
-  grid-template-rows: auto auto auto 1fr auto;
-  gap: 10px;
+  grid-template-rows: auto 1fr auto;
+  gap: 14px;
   transition: transform 280ms var(--landing-ease), opacity 280ms var(--landing-ease);
   box-sizing: border-box;
   overflow: hidden;
@@ -1053,11 +1053,21 @@
   justify-content: center;
 }
 
+.mobileEntryBody {
+  align-self: start;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+  padding-top: 10px;
+}
+
 .mobileAmountHeader {
   display: grid;
   justify-items: center;
-  gap: 10px;
-  padding-top: 4px;
+  gap: 9px;
+  padding-top: 0;
 }
 
 .mobileAmountHeader h2,
@@ -1096,12 +1106,13 @@
 }
 
 .mobileEntryAmountsGroup {
-  margin-top: 2px;
+  margin-top: 0;
 }
 
 .mobileOverlay .amountPillsCompact {
-  gap: 9px;
+  gap: 10px;
   padding-bottom: 0;
+  justify-content: center;
 }
 
 .mobileOverlay .amountPill {
@@ -1111,17 +1122,17 @@
 }
 
 .mobileEntryKeypadGroup {
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 .mobileOverlay .numericKeypad {
-  gap: 6px;
+  gap: 8px;
   margin-top: 0;
 }
 
 .mobileOverlay .keypadKey,
 .mobileOverlay .keypadSpacer {
-  min-height: 42px;
+  min-height: 40px;
   border-radius: 13px;
 }
 
@@ -1130,8 +1141,8 @@
 }
 
 .mobileOverlayFooter {
-  padding-top: 18px;
-  padding-bottom: max(4px, env(safe-area-inset-bottom));
+  padding-top: 10px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
   position: relative;
   z-index: 2;
   margin-top: auto;
