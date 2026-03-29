@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { ArrowLeft, X } from "lucide-react";
 import donationSuccessIcon from "../../app/assets/donation-success-icon.png";
@@ -40,7 +41,7 @@ type LandingMobileProps = {
 
 function MobileDonateButton({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
   return (
-    <button className={`${styles.mobilePrimaryCta} ${!enabled ? styles.primaryCtaDisabled : ""}`} disabled={!enabled} onClick={onClick} type="button">
+    <button className={`${styles.mobilePrimaryCta} ${!enabled ? styles.primaryCtaDisabled : ""}`} onClick={onClick} type="button">
       Donate now
     </button>
   );
@@ -66,7 +67,27 @@ export function LandingMobile({
   screen,
   socialLinks
 }: LandingMobileProps) {
+  const [renderedScreen, setRenderedScreen] = useState<MobileScreenState>("landing");
+  const [overlayClosing, setOverlayClosing] = useState(false);
   const selectedQuickAmount = mobileQuickAmounts.includes(Number(mobileAmountDigits)) ? Number(mobileAmountDigits) : null;
+  const hasMobileAmount = mobileAmountDigits.length > 0;
+
+  useEffect(() => {
+    if (screen === "landing") {
+      if (renderedScreen !== "landing") {
+        setOverlayClosing(true);
+        const timeout = window.setTimeout(() => {
+          setRenderedScreen("landing");
+          setOverlayClosing(false);
+        }, prefersReducedMotion ? 0 : 220);
+        return () => window.clearTimeout(timeout);
+      }
+      return;
+    }
+
+    setRenderedScreen(screen);
+    setOverlayClosing(false);
+  }, [prefersReducedMotion, renderedScreen, screen]);
 
   return (
     <main className={styles.mobileRoot}>
@@ -79,9 +100,8 @@ export function LandingMobile({
 
           <div className={styles.mobileHeroCopy}>
             <h1 className={styles.mobileHeroTitle}>
-              Find rooms.
-              <br />
-              <span className={styles.titleNoWrap}>No agent fees.</span>
+              <span className={styles.titleLine}>Find rooms.</span>
+              <span className={styles.titleLine}>No agent fees.</span>
             </h1>
             <div className={styles.mobileHeroParagraphs}>
               <p>{copy.eyebrow}</p>
@@ -103,18 +123,24 @@ export function LandingMobile({
         </div>
       </section>
 
-      {screen === "entry" ? (
-        <div className={`${styles.mobileOverlay} ${prefersReducedMotion ? styles.mobileOverlayNoMotion : ""}`} role="dialog" aria-modal="true">
-          <div className={styles.mobileOverlayInner}>
+      {renderedScreen === "entry" ? (
+        <div
+          className={`${styles.mobileOverlay} ${prefersReducedMotion ? styles.mobileOverlayNoMotion : ""} ${
+            overlayClosing ? styles.mobileOverlayClosing : styles.mobileOverlayVisible
+          }`}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className={`${styles.mobileOverlayInner} ${overlayClosing ? styles.mobileOverlayInnerClosing : styles.mobileOverlayInnerVisible}`}>
             <button aria-label="Back" className={styles.mobileIconButton} onClick={onCloseEntry} type="button">
               <ArrowLeft size={26} strokeWidth={2.5} />
             </button>
 
             <div className={styles.mobileAmountHeader}>
               <h2>Enter custom amount</h2>
-              <div className={styles.mobileAmountDisplay}>
+              <div className={`${styles.mobileAmountDisplay} ${!hasMobileAmount ? styles.mobileAmountDisplayPlaceholder : ""}`}>
                 <span className={styles.mobileAmountCurrency}>GHS</span>
-                <span>{mobileAmountDigits}</span>
+                <span>{hasMobileAmount ? mobileAmountDigits : "2000"}</span>
               </div>
               <span className={styles.mobileAmountUnderline} />
             </div>
@@ -130,9 +156,19 @@ export function LandingMobile({
         </div>
       ) : null}
 
-      {screen === "success" ? (
-        <div className={`${styles.mobileOverlay} ${prefersReducedMotion ? styles.mobileOverlayNoMotion : ""}`} role="dialog" aria-modal="true">
-          <div className={`${styles.mobileOverlayInner} ${styles.mobileSuccessInner}`}>
+      {renderedScreen === "success" ? (
+        <div
+          className={`${styles.mobileOverlay} ${prefersReducedMotion ? styles.mobileOverlayNoMotion : ""} ${
+            overlayClosing ? styles.mobileOverlayClosing : styles.mobileOverlayVisible
+          }`}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className={`${styles.mobileOverlayInner} ${styles.mobileSuccessInner} ${
+              overlayClosing ? styles.mobileOverlayInnerClosing : styles.mobileOverlayInnerVisible
+            }`}
+          >
             <button aria-label="Close success message" className={styles.mobileIconButton} onClick={onCloseSuccess} type="button">
               <X size={24} strokeWidth={2.6} />
             </button>

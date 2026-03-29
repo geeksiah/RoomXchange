@@ -71,17 +71,17 @@
 
 .brandLogoImage {
   width: auto;
-  height: 46px;
+  height: 50px;
 }
 
 .storeButton {
-  min-height: 64px;
+  min-height: 58px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 11px 22px;
+  padding: 10px 20px;
   transition: transform 180ms var(--landing-ease), box-shadow 180ms var(--landing-ease), opacity 180ms var(--landing-ease);
   will-change: transform;
 }
@@ -125,7 +125,7 @@
 
 .storeIcon {
   width: auto;
-  height: 24px;
+  height: 22px;
 }
 
 .storeCopy {
@@ -135,7 +135,7 @@
 
 .storeCopy small {
   display: block;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   line-height: 1;
   opacity: 0.72;
   letter-spacing: 0.02em;
@@ -143,7 +143,7 @@
 
 .storeCopy strong {
   display: block;
-  font-size: 1.02rem;
+  font-size: 0.96rem;
   line-height: 1.05;
   font-weight: 700;
   white-space: nowrap;
@@ -168,7 +168,7 @@
   display: flex;
   width: max-content;
   white-space: nowrap;
-  animation: tickerSlide 92s linear infinite;
+  animation: tickerSlide 132s linear infinite;
   will-change: transform;
 }
 
@@ -355,7 +355,8 @@
 }
 
 .desktopStickyHeader {
-  position: sticky;
+  position: fixed;
+  inset: 0 0 auto 0;
   top: 0;
   z-index: 18;
   background: transparent;
@@ -393,6 +394,7 @@
   position: relative;
   overflow: visible;
   min-height: calc(100svh - var(--ticker-height) - 76px);
+  padding-top: 76px;
   padding-bottom: 0;
   background: linear-gradient(90deg, var(--landing-hero-left) 0%, #f5f3eb 44%, var(--landing-hero-right) 56%, var(--landing-hero-right) 100%);
   display: flex;
@@ -402,7 +404,7 @@
   width: var(--desktop-shell);
   min-height: 76px;
   margin: 0 auto;
-  padding: 10px 0;
+  padding: 12px 0 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -410,7 +412,7 @@
 
 .heroDonateButton {
   min-height: var(--desktop-header-height);
-  padding: 0 40px;
+  padding: 0 50px;
   border: none;
   border-radius: 999px;
   background: var(--landing-accent);
@@ -430,30 +432,37 @@
   margin: 0 auto;
   padding: 0;
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   flex: 1;
 }
 
 .heroGrid {
   display: grid;
-  grid-template-columns: minmax(0, 0.96fr) minmax(0, 1.04fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: end;
   gap: clamp(28px, 4vw, 68px);
   width: 100%;
+  min-height: calc(100svh - var(--ticker-height) - 76px);
 }
 
 .heroCopyBlock {
   max-width: var(--desktop-copy-width);
-  padding-bottom: clamp(38px, 4vw, 74px);
+  align-self: center;
+  padding-bottom: 0;
 }
 
 .heroTitle {
   margin: 0;
   font-size: var(--desktop-title);
-  line-height: 0.98;
-  letter-spacing: -0.035em;
-  word-spacing: 0.08em;
+  line-height: 0.99;
+  letter-spacing: -0.026em;
+  word-spacing: 0.14em;
   font-weight: 700;
+}
+
+.titleLine {
+  display: block;
+  white-space: nowrap;
 }
 
 .titleNoWrap {
@@ -493,9 +502,10 @@
 
 .desktopStoreRow {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 34px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 32px;
 }
 
 .heroVisualWrap,
@@ -507,32 +517,47 @@
 .heroVisualWrap {
   display: flex;
   justify-content: flex-end;
-  align-self: end;
+  align-items: flex-end;
+  align-self: stretch;
 }
 
 .heroImage {
   width: auto;
   height: auto;
-  max-width: min(100%, 760px);
-  max-height: clamp(480px, 75svh, 860px);
+  max-width: min(100%, 850px);
+  max-height: clamp(560px, 83svh, 980px);
   object-fit: contain;
   display: block;
+  transform: translateX(14px);
 }
 
-.scrollBadgeDock {
-  position: absolute;
-  left: calc(50% + clamp(86px, 11vw, 160px));
-  bottom: -56px;
-  transform: translateX(-50%);
-  z-index: 4;
+.inlineScrollDock {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.inlineScrollDock .scrollIndicator {
+  width: 92px;
+  height: 92px;
+}
+
+.inlineScrollDock .scrollIndicatorRing text {
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+.inlineScrollDock .scrollIndicatorCenter {
+  width: 54px;
+  height: 54px;
 }
 
 .donationSection {
   background: var(--landing-soft);
   min-height: 100svh;
-  padding: 104px 0 52px;
+  padding: 0;
   display: grid;
-  align-items: center;
+  align-items: stretch;
 }
 
 .donationShell,
@@ -541,17 +566,25 @@
   margin: 0 auto;
 }
 
+.donationShell {
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  padding: clamp(24px, 4vh, 36px) 0 14px;
+}
+
 .donationHeading {
-  max-width: 960px;
+  max-width: none;
 }
 
 .donationTitle {
   margin: 0;
-  font-size: clamp(3.4rem, 5.4vw, 5rem);
-  line-height: 0.95;
-  letter-spacing: -0.06em;
-  word-spacing: 0.06em;
+  font-size: clamp(2.9rem, 4vw, 4.15rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  word-spacing: 0.1em;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .donationTitle span {
@@ -559,39 +592,54 @@
 }
 
 .donationHeading p {
-  margin-top: 18px;
-  max-width: 760px;
-  font-size: 1.04rem;
-  line-height: 1.45;
+  margin-top: 12px;
+  max-width: none;
+  font-size: 1rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.donationSubtitleSingleLine {
+  white-space: nowrap;
 }
 
 .donationGrid {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(420px, 0.9fr);
-  align-items: center;
-  gap: clamp(36px, 6vw, 88px);
-  margin-top: 38px;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(420px, 0.9fr);
+  align-items: end;
+  gap: clamp(24px, 4vw, 56px);
+  margin-top: 22px;
+  min-height: 0;
+}
+
+.donationDeviceWrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
 }
 
 .donationDeviceImage {
   width: 100%;
-  max-width: 462px;
+  max-width: 370px;
   height: auto;
+  max-height: calc(100svh - 300px);
+  object-fit: contain;
 }
 
 .donationCardColumn {
   display: flex;
-  justify-content: flex-start;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .desktopDonationCard {
-  width: min(100%, 620px);
-  padding: 24px;
+  width: min(100%, 600px);
+  padding: 22px;
   border-radius: 24px;
   background: var(--landing-card);
   box-shadow: var(--landing-shadow);
   display: grid;
-  gap: 28px;
+  gap: 24px;
 }
 
 .desktopDonationBlock {
@@ -612,6 +660,8 @@
   align-items: center;
   gap: 8px;
   padding: 0 18px;
+  border: 1px solid transparent;
+  box-shadow: none;
 }
 
 .desktopAmountPrefix {
@@ -627,6 +677,14 @@
   color: var(--landing-ink);
   font-size: 1rem;
   outline: none;
+}
+
+.desktopAmountField:focus-within,
+.desktopAmountInput:focus,
+.desktopAmountInput:focus-visible {
+  outline: none !important;
+  border-color: transparent;
+  box-shadow: none !important;
 }
 
 .desktopAmountInput::placeholder {
@@ -694,7 +752,7 @@
   min-height: 100svh;
   padding: 0;
   display: grid;
-  align-items: center;
+  align-items: stretch;
 }
 
 .footerShell {
@@ -702,12 +760,13 @@
   max-width: none;
   display: grid;
   grid-template-columns: minmax(0, 0.64fr) minmax(320px, 0.36fr);
-  align-items: end;
+  align-items: stretch;
   gap: 0;
+  min-height: 100svh;
 }
 
 .footerPanel {
-  min-height: 620px;
+  min-height: 100svh;
   background: transparent;
   color: #ffffff;
   border-radius: 0;
@@ -718,17 +777,17 @@
 .footerPanelInner {
   width: min(100% - 64px, 520px);
   margin-left: clamp(28px, 7vw, 102px);
-  padding: 56px 0;
+  padding: 32px 0;
   display: grid;
-  gap: 26px;
+  gap: 22px;
 }
 
 .footerTitle {
   margin: 0;
-  font-size: clamp(4rem, 5.8vw, 5.4rem);
-  line-height: 0.98;
-  letter-spacing: -0.035em;
-  word-spacing: 0.08em;
+  font-size: clamp(3.55rem, 5vw, 4.7rem);
+  line-height: 0.99;
+  letter-spacing: -0.026em;
+  word-spacing: 0.14em;
 }
 
 .footerParagraphs {
@@ -744,20 +803,24 @@
 .footerStoreRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 6px;
+  gap: 14px;
+  margin-top: 2px;
 }
 
 .footerVisualWrap {
   display: flex;
   justify-content: center;
-  padding: 56px clamp(20px, 4vw, 48px) 0 20px;
+  align-items: flex-start;
+  padding: 0 clamp(16px, 3vw, 36px) 0 0;
+  overflow: hidden;
 }
 
 .footerDeviceImage {
   width: 100%;
-  max-width: 430px;
+  max-width: 350px;
   height: auto;
+  max-height: 100svh;
+  object-fit: contain;
 }
 
 .footerStoreRow [data-store="app"] .storeIcon {
@@ -794,7 +857,7 @@
 
 .mobileHeroInner {
   min-height: calc(100svh - env(safe-area-inset-top) - 34px);
-  padding: 10px 20px calc(8px + env(safe-area-inset-bottom));
+  padding: 14px 20px env(safe-area-inset-bottom);
   display: grid;
   grid-template-rows: auto auto auto 1fr;
   align-content: start;
@@ -802,19 +865,19 @@
 }
 
 .mobileHeroSection .brandLogoImage {
-  height: 38px;
+  height: 34px;
 }
 
 .mobileHeroCopy {
-  margin-top: 14px;
+  margin-top: 26px;
 }
 
 .mobileHeroTitle {
   margin: 0;
-  font-size: clamp(3rem, 11vw, 3.9rem);
+  font-size: clamp(2.78rem, 10vw, 3.45rem);
   line-height: 0.98;
-  letter-spacing: -0.035em;
-  word-spacing: 0.08em;
+  letter-spacing: -0.026em;
+  word-spacing: 0.14em;
 }
 
 .mobileHeroParagraphs {
@@ -826,37 +889,37 @@
 .mobileStoreColumn {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 16px;
+  gap: 8px;
+  margin-top: 18px;
 }
 
 .mobileStoreColumn .storeButton {
-  min-height: 56px;
-  padding: 8px 10px;
-  gap: 8px;
+  min-height: 52px;
+  padding: 8px 8px;
+  gap: 6px;
 }
 
 .mobileStoreColumn .storeIconWrap {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .mobileStoreColumn .storeIcon {
-  height: 19px;
+  height: 17px;
 }
 
 .mobileStoreColumn .storeCopy small {
-  font-size: 0.52rem;
+  font-size: 0.48rem;
 }
 
 .mobileStoreColumn .storeCopy strong {
-  font-size: 0.86rem;
+  font-size: 0.78rem;
   white-space: nowrap;
 }
 
 .mobileHeroVisual {
   position: relative;
-  margin-top: 8px;
+  margin-top: 10px;
   display: flex;
   justify-content: center;
   align-items: flex-end;
@@ -867,18 +930,20 @@
 .mobileHeroImage {
   width: auto;
   max-width: 100%;
-  height: min(39svh, 352px);
+  height: min(45svh, 392px);
   transform: translateX(8px);
   object-fit: contain;
+  display: block;
+  margin-bottom: -2px;
 }
 
 .mobileFloatingDonate {
   position: absolute;
-  right: 4px;
+  right: 8px;
   bottom: 18px;
   min-height: 56px;
-  min-width: 186px;
-  padding: 0 42px;
+  min-width: 208px;
+  padding: 0 48px;
   border: none;
   border-radius: 999px;
   background: var(--landing-accent);
@@ -893,7 +958,7 @@
   position: fixed;
   inset: 0;
   z-index: 20;
-  background: #f4f4f2;
+  background: #f3f2ef;
   animation: overlayEnter 240ms var(--landing-ease);
 }
 
@@ -901,12 +966,33 @@
   animation: none;
 }
 
+.mobileOverlayVisible {
+  opacity: 1;
+}
+
+.mobileOverlayClosing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms var(--landing-ease);
+}
+
 .mobileOverlayInner {
   min-height: 100vh;
-  padding: calc(44px + env(safe-area-inset-top)) 24px calc(26px + env(safe-area-inset-bottom));
+  padding: calc(30px + env(safe-area-inset-top)) 24px calc(18px + env(safe-area-inset-bottom));
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: 34px;
+  grid-template-rows: auto auto auto 1fr auto;
+  gap: 22px;
+  transition: transform 220ms var(--landing-ease), opacity 220ms var(--landing-ease);
+}
+
+.mobileOverlayInnerVisible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.mobileOverlayInnerClosing {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
 }
 
 .mobileIconButton {
@@ -924,8 +1010,8 @@
 .mobileAmountHeader {
   display: grid;
   justify-items: center;
-  gap: 18px;
-  padding-top: 68px;
+  gap: 16px;
+  padding-top: 20px;
 }
 
 .mobileAmountHeader h2,
@@ -940,28 +1026,34 @@
 .mobileAmountDisplay {
   display: inline-flex;
   align-items: baseline;
-  gap: 18px;
+  gap: 26px;
   font-size: clamp(2.8rem, 10vw, 3.4rem);
   line-height: 1;
   letter-spacing: -0.05em;
-  color: rgba(17, 17, 17, 0.82);
+  color: #2d2d2d;
 }
 
 .mobileAmountCurrency {
   font-size: 0.7em;
+  color: rgba(17, 17, 17, 0.72);
+}
+
+.mobileAmountDisplayPlaceholder {
+  color: rgba(17, 17, 17, 0.44);
 }
 
 .mobileAmountUnderline {
   display: block;
   width: min(100%, 208px);
   height: 2px;
-  background: rgba(255, 59, 99, 0.56);
+  background: rgba(255, 59, 99, 0.72);
 }
 
 .mobileOverlayFooter {
-  padding-top: 8px;
+  padding-top: 0;
   position: relative;
   z-index: 2;
+  margin-top: auto;
 }
 
 .mobilePrimaryCta {
@@ -1024,6 +1116,23 @@
 .mobileOverlay :focus-visible {
   outline: 3px solid rgba(255, 59, 99, 0.34);
   outline-offset: 4px;
+}
+
+.desktopRoot .desktopAmountInput:focus-visible,
+.desktopRoot .desktopAmountField:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.mobileOverlay .amountPill,
+.mobileOverlay .keypadKey {
+  background: #e8e6e2;
+  color: #2b2b2b;
+}
+
+.mobileOverlay .amountPillActive {
+  background: #111111;
+  color: #ffffff;
 }
 
 @keyframes spinRing {

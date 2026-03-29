@@ -88,7 +88,7 @@ function LandingPageContent({ paystackPublicKey }: { paystackPublicKey: string |
   });
   const [desktopSelectedAmount, setDesktopSelectedAmount] = useState(200);
   const [desktopCustomAmount, setDesktopCustomAmount] = useState("");
-  const [mobileAmountDigits, setMobileAmountDigits] = useState("2000");
+  const [mobileAmountDigits, setMobileAmountDigits] = useState("");
   const [mobileScreen, setMobileScreen] = useState<MobileScreenState>("landing");
 
   useEffect(() => {
@@ -153,11 +153,12 @@ function LandingPageContent({ paystackPublicKey }: { paystackPublicKey: string |
   const donationProvider = settings.donationProvider?.trim() || null;
   const donationBaseUrl = settings.donationUrl?.trim() || envSupportUrl;
   const paystackEnabled = donationProvider?.toLowerCase() === "paystack" && Boolean(paystackPublicKey);
-  const donationEnabled = paystackEnabled || Boolean(donationBaseUrl);
+  const donationEnabled = Boolean(paystackEnabled || donationBaseUrl);
   const desktopNumericAmount = Number((desktopCustomAmount || String(desktopSelectedAmount)).replace(/[^\d]/g, "")) || 0;
   const mobileNumericAmount = Number(mobileAmountDigits.replace(/[^\d]/g, "")) || 0;
+  const mobileDonationAmount = mobileNumericAmount || 2000;
   const desktopDonateUrl = buildDonationUrl(donationBaseUrl, donationProvider, desktopNumericAmount);
-  const mobileDonateUrl = buildDonationUrl(donationBaseUrl, donationProvider, mobileNumericAmount);
+  const mobileDonateUrl = buildDonationUrl(donationBaseUrl, donationProvider, mobileDonationAmount);
   const desktopSupportAmounts = normalizedSupportAmounts.filter((amount) => amount !== 1000).slice(0, 4);
   const mobileSupportAmounts = mobileQuickAmounts.filter((amount) => amount !== 1000);
 
@@ -250,11 +251,11 @@ function LandingPageContent({ paystackPublicKey }: { paystackPublicKey: string |
   }, [desktopDonateUrl, desktopNumericAmount, openPaystackCheckout, runFallbackDonationRedirect]);
 
   const handleMobileDonate = useCallback(() => {
-    if (openPaystackCheckout(mobileNumericAmount)) {
+    if (openPaystackCheckout(mobileDonationAmount)) {
       return;
     }
     void runFallbackDonationRedirect(mobileDonateUrl);
-  }, [mobileDonateUrl, mobileNumericAmount, openPaystackCheckout, runFallbackDonationRedirect]);
+  }, [mobileDonateUrl, mobileDonationAmount, openPaystackCheckout, runFallbackDonationRedirect]);
 
   const handleMobilePreset = useCallback((amount: number) => {
     setMobileAmountDigits(String(amount));
@@ -262,7 +263,7 @@ function LandingPageContent({ paystackPublicKey }: { paystackPublicKey: string |
 
   const handleMobileDigit = useCallback((digit: string) => {
     setMobileAmountDigits((current) => {
-      const next = current === "0" ? digit : `${current}${digit}`;
+      const next = current === "0" || current === "" ? digit : `${current}${digit}`;
       return next.replace(/^0+(?=\d)/, "") || "0";
     });
   }, []);
@@ -270,7 +271,7 @@ function LandingPageContent({ paystackPublicKey }: { paystackPublicKey: string |
   const handleMobileDelete = useCallback(() => {
     setMobileAmountDigits((current) => {
       const next = current.slice(0, -1);
-      return next.length ? next : "0";
+      return next.length ? next : "";
     });
   }, []);
 

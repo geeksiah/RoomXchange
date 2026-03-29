@@ -39,7 +39,7 @@ type LandingDesktopProps = {
 
 function PrimaryDonateButton({ enabled, label, onClick }: { enabled: boolean; label: string; onClick: () => void }) {
   return (
-    <button className={`${styles.primaryCta} ${!enabled ? styles.primaryCtaDisabled : ""}`} disabled={!enabled} onClick={onClick} type="button">
+    <button className={`${styles.primaryCta} ${!enabled ? styles.primaryCtaDisabled : ""}`} onClick={onClick} type="button">
       <span>{label}</span>
       <ArrowRight size={18} strokeWidth={2.5} />
     </button>
@@ -168,9 +168,8 @@ export function LandingDesktop({
           <div className={styles.heroGrid}>
             <div className={`${styles.heroCopyBlock} ${styles.revealItem}`} data-parallax-speed="0.14" data-reveal>
               <h1 className={styles.heroTitle}>
-                Find rooms.
-                <br />
-                <span className={styles.titleNoWrap}>No agent fees.</span>
+                <span className={styles.titleLine}>Find rooms.</span>
+                <span className={styles.titleLine}>No agent fees.</span>
               </h1>
               <div className={styles.heroParagraphs}>
                 <p>{copy.eyebrow}</p>
@@ -179,6 +178,9 @@ export function LandingDesktop({
               <div className={styles.desktopStoreRow}>
                 <StoreButton href={playStoreUrl} store="play" tone="dark" />
                 <StoreButton href={appStoreUrl} store="app" tone="dark" />
+                <div className={styles.inlineScrollDock}>
+                  <ScrollIndicator onClick={handleScrollToDonation} />
+                </div>
               </div>
             </div>
 
@@ -188,9 +190,6 @@ export function LandingDesktop({
           </div>
         </div>
 
-        <div className={styles.scrollBadgeDock}>
-          <ScrollIndicator onClick={handleScrollToDonation} />
-        </div>
       </section>
 
       <DisclaimerTicker text={disclaimerText} />
@@ -199,9 +198,9 @@ export function LandingDesktop({
         <div className={styles.donationShell}>
           <div className={`${styles.donationHeading} ${styles.revealItem}`} data-reveal>
             <h2 className={styles.donationTitle}>
-              Help us keep RoomXchange <span>free forever</span>
+              <span className={styles.titleNoWrap}>Help us keep RoomXchange <span>free forever</span></span>
             </h2>
-            <p>{copy.donationSupport}</p>
+            <p className={styles.donationSubtitleSingleLine}>{copy.donationSupport}</p>
           </div>
 
           <div className={styles.donationGrid}>
@@ -233,9 +232,8 @@ export function LandingDesktop({
           <div className={`${styles.footerPanel} ${styles.revealItem}`} data-parallax-speed="0.08" data-reveal>
             <div className={styles.footerPanelInner}>
               <h2 className={styles.footerTitle}>
-                Find rooms.
-                <br />
-                <span className={styles.titleNoWrap}>No agent fees.</span>
+                <span className={styles.titleLine}>Find rooms.</span>
+                <span className={styles.titleLine}>No agent fees.</span>
               </h2>
               <div className={styles.footerParagraphs}>
                 <p>{copy.eyebrow}</p>
