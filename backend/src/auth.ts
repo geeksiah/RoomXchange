@@ -177,7 +177,7 @@ async function upsertVerifiedUserProfile(input: {
   cognitoUsername: string;
   phone: string;
   name: string;
-  email: string;
+  email?: string | null;
 }) {
   const timestamp = new Date().toISOString();
   const current = await getUserItem(input.userId);
@@ -276,7 +276,7 @@ async function getCognitoSub(username: string) {
 
 async function createOrUpdatePasswordUser(input: {
   phone: string;
-  email: string;
+  email?: string | null;
   name: string;
   password: string;
   username?: string | null;
@@ -291,9 +291,9 @@ async function createOrUpdatePasswordUser(input: {
         MessageAction: "SUPPRESS",
         UserAttributes: [
           { Name: "phone_number", Value: input.phone },
-          { Name: "email", Value: input.email },
           { Name: "name", Value: input.name },
-          { Name: "phone_number_verified", Value: "false" }
+          { Name: "phone_number_verified", Value: "false" },
+          ...(input.email ? [{ Name: "email", Value: input.email }] : [])
         ]
       })
     );
@@ -304,8 +304,8 @@ async function createOrUpdatePasswordUser(input: {
         Username: username,
         UserAttributes: [
           { Name: "phone_number", Value: input.phone },
-          { Name: "email", Value: input.email },
-          { Name: "name", Value: input.name }
+          { Name: "name", Value: input.name },
+          ...(input.email ? [{ Name: "email", Value: input.email }] : [])
         ]
       })
     );
@@ -375,14 +375,14 @@ export async function loginWithPassword(input: unknown): Promise<AuthSession> {
 export async function requestSignup(input: unknown) {
   const parsed = authSignupRequestSchema.parse(input);
   const phone = sanitizePhone(parsed.phone);
-  const email = normalizeEmail(parsed.email);
+  const email = parsed.email ? normalizeEmail(parsed.email) : null;
 
-  if (await findUserByIdentifier(phone) || (await findUserByIdentifier(email))) {
+  if (await findUserByIdentifier(phone) || (email ? await findUserByIdentifier(email) : null)) {
     throw new AppError(409, "An account with this phone or email already exists.");
   }
 
   const existingPhoneUsername = await findCognitoUsernameByAlias(phone);
-  const existingEmailUsername = await findCognitoUsernameByAlias(email);
+  const existingEmailUsername = email ? await findCognitoUsernameByAlias(email) : null;
   if (existingPhoneUsername && existingEmailUsername && existingPhoneUsername !== existingEmailUsername) {
     throw new AppError(409, "This phone or email is already linked to another account.");
   }
@@ -446,8 +446,8 @@ export async function verifySignup(input: unknown) {
       UserAttributes: [
         { Name: "phone_number", Value: pending.phone },
         { Name: "phone_number_verified", Value: "true" },
-        { Name: "email", Value: pending.email },
-        { Name: "name", Value: pending.name }
+        { Name: "name", Value: pending.name },
+        ...(pending.email ? [{ Name: "email", Value: pending.email }] : [])
       ]
     })
   );

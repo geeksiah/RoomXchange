@@ -80,7 +80,7 @@ export function AuthPanel({ title, mode = "login" }: { title?: string; mode?: Au
 
   const signupRequestForm = useForm<AuthSignupRequestInput>({
     resolver: zodResolver(authSignupRequestSchema),
-    defaultValues: { name: "", email: "", phone: "", password: "" }
+    defaultValues: { name: "", email: undefined, phone: "", password: "" }
   });
 
   const signupVerifyForm = useForm<AuthSignupVerifyInput>({
@@ -131,7 +131,7 @@ export function AuthPanel({ title, mode = "login" }: { title?: string; mode?: Au
       const result = await api.requestSignup(values);
       const normalizedPhone = sanitizePhone(values.phone);
       setChallenge({
-        identifier: values.email,
+        identifier: values.email?.trim() || normalizedPhone,
         phone: normalizedPhone,
         session: result.session,
         password: values.password
@@ -227,8 +227,8 @@ export function AuthPanel({ title, mode = "login" }: { title?: string; mode?: Au
           <>
             <Text className="font-jakarta-bold text-sm text-rx-text">Full name</Text>
             <Controller control={signupRequestForm.control} name="name" render={({ field }) => <Input placeholder="Ama Ofori" returnKeyType="next" value={field.value} onChangeText={field.onChange} />} />
-            <Text className="font-jakarta-bold text-sm text-rx-text">Email</Text>
-            <Controller control={signupRequestForm.control} name="email" render={({ field }) => <Input placeholder="ama@example.com" keyboardType="email-address" returnKeyType="next" value={field.value} onChangeText={field.onChange} />} />
+            <Text className="font-jakarta-bold text-sm text-rx-text">Email (optional)</Text>
+            <Controller control={signupRequestForm.control} name="email" render={({ field }) => <Input placeholder="ama@example.com" keyboardType="email-address" returnKeyType="next" value={field.value ?? ""} onChangeText={field.onChange} />} />
             <Text className="font-jakarta-bold text-sm text-rx-text">Phone number</Text>
             <Controller control={signupRequestForm.control} name="phone" render={({ field }) => <Input placeholder="024 123 4567" keyboardType="phone-pad" returnKeyType="next" value={field.value} onChangeText={field.onChange} />} />
             <Text className="font-jakarta-bold text-sm text-rx-text">Password</Text>

@@ -32,7 +32,7 @@ export default function SignupScreen() {
           <View className="mt-10">
             <Text className="font-jakarta-bold text-4xl text-rx-text">Create account</Text>
             <Text className="mt-3 max-w-[320px] font-jakarta text-sm leading-6 text-rx-muted">
-              Create your account with email, phone, and password. We will verify your phone number once.
+              Create your account with phone number and password. Email is optional. We will verify your phone number once.
             </Text>
           </View>
 

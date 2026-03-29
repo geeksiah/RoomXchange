@@ -29,7 +29,7 @@ export type PendingSignupItem = {
   userId: string;
   cognitoUsername: string;
   phone: string;
-  email: string;
+  email: string | null;
   name: string;
   code: string;
   expiresAt: string;

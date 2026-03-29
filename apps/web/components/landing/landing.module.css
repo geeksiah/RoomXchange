@@ -71,7 +71,7 @@
 
 .brandLogoImage {
   width: auto;
-  height: 50px;
+  height: 46px;
 }
 
 .storeButton {
@@ -462,7 +462,7 @@
   line-height: 0.99;
   letter-spacing: -0.026em;
   word-spacing: 0.14em;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .titleLine {
@@ -506,7 +506,7 @@
 }
 
 .heroParagraphs p:last-child {
-  max-width: 38ch;
+  max-width: 46ch;
 }
 
 .desktopStoreRow {
@@ -584,10 +584,6 @@
   box-sizing: border-box;
 }
 
-.donationHeading {
-  max-width: none;
-}
-
 .donationTitle {
   margin: 0;
   font-size: clamp(2.9rem, 4vw, 4.15rem);
@@ -616,10 +612,10 @@
 
 .donationGrid {
   display: grid;
-  grid-template-columns: minmax(280px, 0.72fr) minmax(420px, 0.9fr);
+  grid-template-columns: minmax(320px, 0.82fr) minmax(440px, 1.02fr);
   align-items: end;
-  gap: clamp(24px, 4vw, 56px);
-  margin-top: 18px;
+  gap: clamp(28px, 4vw, 60px);
+  margin-top: 0;
   min-height: 0;
   overflow: hidden;
 }
@@ -632,16 +628,36 @@
 
 .donationDeviceImage {
   width: 100%;
-  max-width: 430px;
+  max-width: 490px;
   height: auto;
-  max-height: calc(100svh - 220px);
+  max-height: calc(100svh - 130px);
   object-fit: contain;
-  transform: translateY(72px);
+  transform: translateY(102px);
+}
+
+.donationContentColumn {
+  display: grid;
+  align-content: center;
+  gap: 24px;
+  min-height: 100%;
+}
+
+.donationHeadingInline {
+  display: grid;
+  gap: 10px;
+}
+
+.donationHeadingInline p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--landing-muted);
+  white-space: nowrap;
 }
 
 .donationCardColumn {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
 }
 
@@ -731,7 +747,7 @@
 }
 
 .primaryCtaDisabled {
-  pointer-events: none;
+  opacity: 0.96;
 }
 
 .desktopSuccessCard {
@@ -810,7 +826,7 @@
 }
 
 .footerParagraphs p {
-  max-width: 460px;
+  max-width: 540px;
   color: rgba(255, 255, 255, 0.8);
 }
 
@@ -831,11 +847,11 @@
 
 .footerDeviceImage {
   width: 100%;
-  max-width: 390px;
+  max-width: 420px;
   height: auto;
   max-height: calc(100svh + 48px);
   object-fit: contain;
-  transform: translateY(20px);
+  transform: translateY(34px);
 }
 
 .footerStoreRow [data-store="app"] .storeIcon {
@@ -854,11 +870,14 @@
 }
 
 .mobileRoot {
-  min-height: 100dvh;
-  height: 100dvh;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  min-height: 100svh;
+  height: 100svh;
   background: linear-gradient(180deg, #ffffff 0%, var(--landing-soft) 14%, #f7d6e2 100%);
-  position: relative;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .mobileSafeTop {
@@ -866,15 +885,15 @@
 }
 
 .mobileHeroSection {
-  min-height: calc(100dvh - env(safe-area-inset-top) - 34px);
-  height: calc(100dvh - env(safe-area-inset-top) - 34px);
+  min-height: calc(100svh - env(safe-area-inset-top) - 34px);
+  height: calc(100svh - env(safe-area-inset-top) - 34px);
   padding-bottom: 0;
   overflow: hidden;
 }
 
 .mobileHeroInner {
-  min-height: calc(100dvh - env(safe-area-inset-top) - 34px);
-  height: calc(100dvh - env(safe-area-inset-top) - 34px);
+  min-height: calc(100svh - env(safe-area-inset-top) - 34px);
+  height: calc(100svh - env(safe-area-inset-top) - 34px);
   padding: 14px 20px 0;
   display: grid;
   grid-template-rows: auto auto auto 1fr;
@@ -949,7 +968,7 @@
 .mobileHeroImage {
   width: auto;
   max-width: 100%;
-  height: min(47dvh, 418px);
+  height: min(46svh, 410px);
   transform: translateX(8px);
   object-fit: contain;
   display: block;
@@ -971,6 +990,7 @@
   font-weight: 700;
   box-shadow: 0 18px 34px rgba(255, 59, 99, 0.28);
   z-index: 2;
+  transition: transform 180ms var(--landing-ease), box-shadow 180ms var(--landing-ease), filter 180ms var(--landing-ease);
 }
 
 .mobileOverlay {
@@ -992,17 +1012,17 @@
 .mobileOverlayClosing {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 220ms var(--landing-ease);
+  transition: opacity 280ms var(--landing-ease);
 }
 
 .mobileOverlayInner {
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: 100svh;
+  height: 100svh;
   padding: calc(24px + env(safe-area-inset-top)) 24px calc(12px + env(safe-area-inset-bottom));
   display: grid;
   grid-template-rows: auto auto auto 1fr auto;
-  gap: 16px;
-  transition: transform 220ms var(--landing-ease), opacity 220ms var(--landing-ease);
+  gap: 14px;
+  transition: transform 280ms var(--landing-ease), opacity 280ms var(--landing-ease);
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -1014,7 +1034,7 @@
 
 .mobileOverlayInnerClosing {
   opacity: 0;
-  transform: translate3d(0, 18px, 0);
+  transform: translate3d(0, 12px, 0);
 }
 
 .mobileIconButton {
@@ -1032,8 +1052,8 @@
 .mobileAmountHeader {
   display: grid;
   justify-items: center;
-  gap: 14px;
-  padding-top: 12px;
+  gap: 12px;
+  padding-top: 8px;
 }
 
 .mobileAmountHeader h2,
@@ -1087,6 +1107,14 @@
 .mobileOverlayFooter .mobilePrimaryCta {
   min-height: 56px;
   box-shadow: 0 18px 30px rgba(255, 59, 99, 0.22);
+}
+
+.mobilePrimaryCta:active,
+.primaryCta:active,
+.heroDonateButton:active,
+.mobileFloatingDonate:active {
+  transform: scale(0.985);
+  box-shadow: 0 12px 22px rgba(255, 59, 99, 0.2);
 }
 
 .mobileSuccessInner {

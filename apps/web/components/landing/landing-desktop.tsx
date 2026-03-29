@@ -196,34 +196,36 @@ export function LandingDesktop({
 
       <section className={styles.donationSection} id="support" ref={donationSectionRef}>
         <div className={styles.donationShell}>
-          <div className={`${styles.donationHeading} ${styles.revealItem}`} data-reveal>
-            <h2 className={styles.donationTitle}>
-              <span className={styles.titleNoWrap}>
-                Help us keep RoomXchange <span className={styles.donationAccent}>free forever</span>
-              </span>
-            </h2>
-            <p className={styles.donationSubtitleSingleLine}>{copy.donationSupport}</p>
-          </div>
-
           <div className={styles.donationGrid}>
             <div className={`${styles.donationDeviceWrap} ${styles.revealItem}`} data-parallax-speed="0.18" data-reveal>
               <Image alt="RoomXchange explore screen" className={styles.donationDeviceImage} src={desktopDonationImage} />
             </div>
 
-            <div className={`${styles.donationCardColumn} ${styles.revealItem}`} data-parallax-speed="0.08" data-reveal>
-              {donationSuccess ? (
-                <DesktopSuccessCard copy={copy} donationEnabled={donationEnabled} onDonateNow={onDonateNow} socialLinks={socialLinks} />
-              ) : (
-                <DonationCard
-                  customAmount={customAmount}
-                  donationEnabled={donationEnabled}
-                  onCustomAmountChange={onCustomAmountChange}
-                  onDonateNow={onDonateNow}
-                  onPresetAmount={onPresetAmount}
-                  selectedAmount={selectedAmount}
-                  supportAmounts={supportAmounts}
-                />
-              )}
+            <div className={`${styles.donationContentColumn} ${styles.revealItem}`} data-parallax-speed="0.08" data-reveal>
+              <div className={styles.donationHeadingInline}>
+                <h2 className={styles.donationTitle}>
+                  <span className={styles.titleNoWrap}>
+                    Help us keep RoomXchange <span className={styles.donationAccent}>free forever</span>
+                  </span>
+                </h2>
+                <p className={styles.donationSubtitleSingleLine}>{copy.donationSupport}</p>
+              </div>
+
+              <div className={styles.donationCardColumn}>
+                {donationSuccess ? (
+                  <DesktopSuccessCard copy={copy} donationEnabled={donationEnabled} onDonateNow={onDonateNow} socialLinks={socialLinks} />
+                ) : (
+                  <DonationCard
+                    customAmount={customAmount}
+                    donationEnabled={donationEnabled}
+                    onCustomAmountChange={onCustomAmountChange}
+                    onDonateNow={onDonateNow}
+                    onPresetAmount={onPresetAmount}
+                    selectedAmount={selectedAmount}
+                    supportAmounts={supportAmounts}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>

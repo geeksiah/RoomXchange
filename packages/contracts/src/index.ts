@@ -93,7 +93,7 @@ export const authLoginSchema = z.object({
 
 export const authSignupRequestSchema = z.object({
   name: z.string().trim().min(2).max(80),
-  email: emailSchema,
+  email: optionalEmailSchema,
   phone: phoneSchema,
   password: passwordSchema
 });

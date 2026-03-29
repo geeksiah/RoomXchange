@@ -79,7 +79,7 @@ export function LandingMobile({
         const timeout = window.setTimeout(() => {
           setRenderedScreen("landing");
           setOverlayClosing(false);
-        }, prefersReducedMotion ? 0 : 220);
+        }, prefersReducedMotion ? 0 : 280);
         return () => window.clearTimeout(timeout);
       }
       return;

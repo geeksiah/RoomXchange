@@ -14,7 +14,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: "light",
   icon: "./src/assets/icon-primary-bg.png",
   splash: {
-    image: "./src/assets/icon-light-splash.png",
+    image: "./src/assets/icon-light-foreground.png",
     backgroundColor: "#FF385C",
     resizeMode: "contain"
   },
@@ -27,7 +27,7 @@ const config: ExpoConfig = {
     package: "com.roomxchange.mobile",
     googleServicesFile: androidGoogleServicesFile,
     adaptiveIcon: {
-      foregroundImage: "./src/assets/icon-light-splash.png",
+      foregroundImage: "./src/assets/icon-light-foreground.png",
       backgroundColor: "#FF385C"
     }
   },

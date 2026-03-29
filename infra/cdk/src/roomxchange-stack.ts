@@ -163,7 +163,11 @@ export class RoomXchangeStack extends Stack {
       PAYSTACK_PLAN_CODE: paystackPlanCode,
       ADMIN_WEB_EMAIL: adminWebEmail,
       ADMIN_WEB_PHONE: adminWebPhone,
-      ADMIN_WEB_PASSWORD: adminWebPassword
+      ADMIN_WEB_PASSWORD: adminWebPassword,
+      ARKESEL_API_KEY: arkeselApiKey,
+      ARKESEL_SENDER_ID: arkeselSenderId,
+      ARKESEL_SMS_API_URL: arkeselSmsApiUrl,
+      OTP_SMS_TEMPLATE: otpSmsTemplate
     };
 
     const apiHandler = this.createNodeFunction("ApiHandlerFn", {
@@ -387,7 +391,7 @@ export class RoomXchangeStack extends Stack {
     return new NodejsFunction(this, id, {
       entry,
       handler,
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       architecture: Architecture.ARM_64,
       timeout: Duration.seconds(30),
       memorySize: 1024,

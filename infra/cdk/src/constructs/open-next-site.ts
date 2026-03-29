@@ -37,7 +37,7 @@ export class OpenNextSite extends Construct {
     });
 
     const serverFunction = new Function(this, "ServerFunction", {
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       architecture: Architecture.ARM_64,
       handler: "index.handler",
       code: Code.fromAsset(path.join(buildPath, "server-functions", "default")),
@@ -51,7 +51,7 @@ export class OpenNextSite extends Construct {
     });
 
     const imageFunction = new Function(this, "ImageFunction", {
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_22_X,
       architecture: Architecture.ARM_64,
       handler: "index.handler",
       code: Code.fromAsset(path.join(buildPath, "image-optimization-function")),
