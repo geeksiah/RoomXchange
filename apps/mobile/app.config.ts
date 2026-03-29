@@ -14,7 +14,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: "light",
   icon: "./src/assets/icon-primary-bg.png",
   splash: {
-    image: "./src/assets/icon-light-foreground.png",
+    image: "./src/assets/icon-light-splash-foreground.png",
     backgroundColor: "#FF385C",
     resizeMode: "contain"
   },

@@ -23,7 +23,11 @@ export async function sendOtpSms(phoneNumber: string, code: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`Arkesel SMS request failed with status ${response.status}`);
+    const responseText = await response.text().catch(() => "");
+    const detail = responseText.trim();
+    throw new Error(
+      detail ? `Arkesel SMS request failed with status ${response.status}: ${detail}` : `Arkesel SMS request failed with status ${response.status}`
+    );
   }
 
   const payload = (await response.json().catch(() => null)) as
@@ -36,6 +40,6 @@ export async function sendOtpSms(phoneNumber: string, code: string) {
 
   const resultCode = String(payload?.code ?? payload?.status ?? "");
   if (resultCode && resultCode !== "1000" && resultCode !== "success") {
-    throw new Error(payload?.message ?? "Arkesel rejected the SMS request.");
+    throw new Error(payload?.message ? `Arkesel rejected the SMS request: ${payload.message}` : "Arkesel rejected the SMS request.");
   }
 }

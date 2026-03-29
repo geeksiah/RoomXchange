@@ -388,9 +388,12 @@ export class RoomXchangeStack extends Stack {
       environment?: Record<string, string>;
     }
   ) {
+    const depsLockFilePath = path.join(path.resolve(__dirname, "../../.."), "package-lock.json");
+
     return new NodejsFunction(this, id, {
       entry,
       handler,
+      depsLockFilePath,
       runtime: Runtime.NODEJS_22_X,
       architecture: Architecture.ARM_64,
       timeout: Duration.seconds(30),

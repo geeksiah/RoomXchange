@@ -192,7 +192,9 @@
 }
 
 .tickerCompact .tickerEntry {
-  font-size: 0.9rem;
+  font-size: 0.78rem;
+  gap: 6px;
+  padding-right: 34px;
 }
 
 .scrollIndicator {
@@ -561,6 +563,8 @@
 }
 
 .donationSection {
+  position: relative;
+  z-index: 1;
   background: var(--landing-soft);
   height: 100svh;
   padding: 0;
@@ -588,11 +592,13 @@
 .donationTitle {
   margin: 0;
   font-size: clamp(2.18rem, 3vw, 3.28rem);
-  line-height: 0.98;
+  line-height: 1.01;
   letter-spacing: -0.04em;
   word-spacing: 0.1em;
   font-weight: 700;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 700px;
+  text-wrap: balance;
 }
 
 .donationAccent {
@@ -604,7 +610,7 @@
   max-width: none;
   font-size: 1rem;
   line-height: 1.35;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .donationSubtitleSingleLine {
@@ -615,7 +621,7 @@
   display: grid;
   grid-template-columns: minmax(390px, 0.86fr) minmax(0, 1fr);
   align-items: end;
-  gap: clamp(24px, 3vw, 40px);
+  gap: clamp(18px, 2.4vw, 32px);
   margin-top: 0;
   min-height: 0;
   overflow: visible;
@@ -631,9 +637,9 @@
   width: 100%;
   max-width: 600px;
   height: auto;
-  max-height: calc(100svh - 48px);
+  max-height: calc(100svh - 28px);
   object-fit: contain;
-  transform: translateY(154px);
+  transform: translateY(186px);
 }
 
 .donationContentColumn {
@@ -642,6 +648,8 @@
   gap: 24px;
   min-height: 100%;
   min-width: 0;
+  padding-top: 34px;
+  padding-right: clamp(18px, 2vw, 34px);
 }
 
 .donationHeadingInline {
@@ -655,7 +663,8 @@
   font-size: 0.94rem;
   line-height: 1.35;
   color: var(--landing-muted);
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 650px;
 }
 
 .donationCardColumn {
@@ -781,6 +790,8 @@
 }
 
 .footerSection {
+  position: relative;
+  z-index: 2;
   background: #000000;
   height: 100svh;
   padding: 0;
@@ -896,9 +907,11 @@
 }
 
 .mobileHeroInner {
+  width: min(100%, 430px);
+  margin: 0 auto;
   min-height: calc(100svh - env(safe-area-inset-top) - 34px);
   height: calc(100svh - env(safe-area-inset-top) - 34px);
-  padding: 14px 20px 0;
+  padding: 14px 22px 0;
   display: grid;
   grid-template-rows: auto auto auto 1fr;
   align-content: start;
@@ -1022,10 +1035,10 @@
 .mobileOverlayInner {
   min-height: 100svh;
   height: 100svh;
-  padding: calc(24px + env(safe-area-inset-top)) 24px calc(12px + env(safe-area-inset-bottom));
+  padding: calc(22px + env(safe-area-inset-top)) 22px calc(12px + env(safe-area-inset-bottom));
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 14px;
+  gap: 16px;
   transition: transform 280ms var(--landing-ease), opacity 280ms var(--landing-ease);
   box-sizing: border-box;
   overflow: hidden;
@@ -1056,17 +1069,17 @@
 .mobileEntryBody {
   align-self: start;
   width: 100%;
-  max-width: 420px;
+  max-width: 386px;
   margin: 0 auto;
   display: grid;
-  gap: 18px;
-  padding-top: 10px;
+  gap: 24px;
+  padding-top: 18px;
 }
 
 .mobileAmountHeader {
   display: grid;
   justify-items: center;
-  gap: 9px;
+  gap: 10px;
   padding-top: 0;
 }
 
@@ -1082,8 +1095,8 @@
 .mobileAmountDisplay {
   display: inline-flex;
   align-items: baseline;
-  gap: 26px;
-  font-size: clamp(2.8rem, 10vw, 3.4rem);
+  gap: 14px;
+  font-size: clamp(3rem, 11vw, 3.45rem);
   line-height: 1;
   letter-spacing: -0.05em;
   color: #2d2d2d;
@@ -1106,42 +1119,42 @@
 }
 
 .mobileEntryAmountsGroup {
-  margin-top: 0;
+  margin-top: 2px;
 }
 
 .mobileOverlay .amountPillsCompact {
-  gap: 10px;
+  gap: 12px;
   padding-bottom: 0;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .mobileOverlay .amountPill {
-  min-height: 42px;
-  padding: 0 14px;
-  font-size: 0.92rem;
+  min-height: 46px;
+  padding: 0 16px;
+  font-size: 0.98rem;
 }
 
 .mobileEntryKeypadGroup {
-  margin-top: 0;
+  margin-top: -2px;
 }
 
 .mobileOverlay .numericKeypad {
-  gap: 8px;
+  gap: 10px;
   margin-top: 0;
 }
 
 .mobileOverlay .keypadKey,
 .mobileOverlay .keypadSpacer {
-  min-height: 40px;
-  border-radius: 13px;
+  min-height: 58px;
+  border-radius: 16px;
 }
 
 .mobileOverlay .keypadKey {
-  font-size: 0.96rem;
+  font-size: 1.02rem;
 }
 
 .mobileOverlayFooter {
-  padding-top: 10px;
+  padding-top: 18px;
   padding-bottom: max(8px, env(safe-area-inset-bottom));
   position: relative;
   z-index: 2;

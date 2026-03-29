@@ -51,8 +51,20 @@ function getFriendlyOtpRequestError(error: unknown) {
     return "OTP delivery failed. Check the Arkesel API key, sender ID, and deployed backend environment.";
   }
 
+  if (message.includes("status 401") || message.includes("status 403")) {
+    return "Arkesel rejected the OTP request. Check the API key and whether the sender ID is approved.";
+  }
+
+  if (message.includes("status 400") || message.includes("status 422")) {
+    return "Arkesel rejected the OTP request. Check the phone number format and sender ID configuration.";
+  }
+
   if (message.includes("internal server")) {
     return "The backend could not send the OTP. Redeploy the API so the Arkesel environment variables reach the live Lambda.";
+  }
+
+  if (error instanceof Error && error.message.trim() && error.message !== "Request failed.") {
+    return error.message;
   }
 
   return "We couldn't send your code right now. Please try again shortly.";
