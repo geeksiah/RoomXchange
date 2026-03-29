@@ -566,7 +566,7 @@
   padding: 0;
   display: grid;
   align-items: stretch;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .donationShell,
@@ -580,13 +580,14 @@
   min-height: 100%;
   display: grid;
   align-content: center;
-  padding: clamp(18px, 3.2vh, 28px) clamp(32px, 4vw, 56px) 0;
+  padding: clamp(18px, 3.2vh, 28px) clamp(44px, 4.8vw, 76px) 0;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .donationTitle {
   margin: 0;
-  font-size: clamp(2.48rem, 3.5vw, 3.72rem);
+  font-size: clamp(2.18rem, 3vw, 3.28rem);
   line-height: 0.98;
   letter-spacing: -0.04em;
   word-spacing: 0.1em;
@@ -612,12 +613,12 @@
 
 .donationGrid {
   display: grid;
-  grid-template-columns: minmax(360px, 0.9fr) minmax(0, 0.98fr);
+  grid-template-columns: minmax(390px, 0.86fr) minmax(0, 1fr);
   align-items: end;
-  gap: clamp(28px, 4vw, 60px);
+  gap: clamp(24px, 3vw, 40px);
   margin-top: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .donationDeviceWrap {
@@ -628,11 +629,11 @@
 
 .donationDeviceImage {
   width: 100%;
-  max-width: 560px;
+  max-width: 600px;
   height: auto;
-  max-height: calc(100svh - 84px);
+  max-height: calc(100svh - 48px);
   object-fit: contain;
-  transform: translateY(124px);
+  transform: translateY(154px);
 }
 
 .donationContentColumn {
@@ -651,7 +652,7 @@
 
 .donationHeadingInline p {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.94rem;
   line-height: 1.35;
   color: var(--landing-muted);
   white-space: nowrap;
@@ -661,6 +662,7 @@
   display: flex;
   justify-content: flex-start;
   align-items: center;
+  padding-right: 18px;
 }
 
 .desktopDonationCard {
@@ -1093,38 +1095,42 @@
   background: rgba(255, 59, 99, 0.72);
 }
 
-.mobileOverlayInner > .amountPillsCompact {
+.mobileEntryAmountsGroup {
   margin-top: 2px;
 }
 
 .mobileOverlay .amountPillsCompact {
-  gap: 10px;
-  padding-bottom: 2px;
+  gap: 9px;
+  padding-bottom: 0;
 }
 
 .mobileOverlay .amountPill {
-  min-height: 46px;
-  padding: 0 16px;
-  font-size: 0.96rem;
+  min-height: 42px;
+  padding: 0 14px;
+  font-size: 0.92rem;
+}
+
+.mobileEntryKeypadGroup {
+  margin-top: 8px;
 }
 
 .mobileOverlay .numericKeypad {
-  gap: 7px;
-  margin-top: 4px;
+  gap: 6px;
+  margin-top: 0;
 }
 
 .mobileOverlay .keypadKey,
 .mobileOverlay .keypadSpacer {
-  min-height: 46px;
-  border-radius: 14px;
+  min-height: 42px;
+  border-radius: 13px;
 }
 
 .mobileOverlay .keypadKey {
-  font-size: 1rem;
+  font-size: 0.96rem;
 }
 
 .mobileOverlayFooter {
-  padding-top: 12px;
+  padding-top: 18px;
   padding-bottom: max(4px, env(safe-area-inset-bottom));
   position: relative;
   z-index: 2;

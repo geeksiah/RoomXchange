@@ -145,9 +145,13 @@ export function LandingMobile({
               <span className={styles.mobileAmountUnderline} />
             </div>
 
-            <AmountPills amounts={mobileQuickAmounts} compact onSelect={onPresetAmount} selectedAmount={selectedQuickAmount} />
+            <div className={styles.mobileEntryAmountsGroup}>
+              <AmountPills amounts={mobileQuickAmounts} compact onSelect={onPresetAmount} selectedAmount={selectedQuickAmount} />
+            </div>
 
-            <NumericKeypad onDelete={onDeleteDigit} onDigit={onPressDigit} />
+            <div className={styles.mobileEntryKeypadGroup}>
+              <NumericKeypad onDelete={onDeleteDigit} onDigit={onPressDigit} />
+            </div>
 
             <div className={styles.mobileOverlayFooter}>
               <MobileDonateButton enabled={donationEnabled} onClick={onDonateNow} />

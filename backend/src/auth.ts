@@ -421,7 +421,17 @@ export async function requestSignup(input: unknown) {
     })
   );
 
-  await sendOtpSms(phone, code);
+  try {
+    await sendOtpSms(phone, code);
+  } catch (error) {
+    await db.send(
+      new DeleteCommand({
+        TableName: env.TABLE_NAME,
+        Key: tableKeys.pendingSignup(sessionId)
+      })
+    );
+    throw new AppError(502, error instanceof Error ? error.message : "OTP delivery failed.");
+  }
 
   return {
     session: sessionId,
@@ -498,7 +508,17 @@ export async function requestPasswordReset(input: unknown) {
     })
   );
 
-  await sendOtpSms(user.phone, code);
+  try {
+    await sendOtpSms(user.phone, code);
+  } catch (error) {
+    await db.send(
+      new DeleteCommand({
+        TableName: env.TABLE_NAME,
+        Key: tableKeys.pendingPasswordReset(sessionId)
+      })
+    );
+    throw new AppError(502, error instanceof Error ? error.message : "OTP delivery failed.");
+  }
 
   return {
     session: sessionId,

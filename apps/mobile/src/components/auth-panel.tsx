@@ -47,6 +47,14 @@ function getFriendlyOtpRequestError(error: unknown) {
     return "Check the phone number and try again.";
   }
 
+  if (message.includes("arkesel") || message.includes("sms")) {
+    return "OTP delivery failed. Check the Arkesel API key, sender ID, and deployed backend environment.";
+  }
+
+  if (message.includes("internal server")) {
+    return "The backend could not send the OTP. Redeploy the API so the Arkesel environment variables reach the live Lambda.";
+  }
+
   return "We couldn't send your code right now. Please try again shortly.";
 }
 
