@@ -198,7 +198,9 @@ export function LandingDesktop({
         <div className={styles.donationShell}>
           <div className={`${styles.donationHeading} ${styles.revealItem}`} data-reveal>
             <h2 className={styles.donationTitle}>
-              <span className={styles.titleNoWrap}>Help us keep RoomXchange <span>free forever</span></span>
+              <span className={styles.titleNoWrap}>
+                Help us keep RoomXchange <span className={styles.donationAccent}>free forever</span>
+              </span>
             </h2>
             <p className={styles.donationSubtitleSingleLine}>{copy.donationSupport}</p>
           </div>

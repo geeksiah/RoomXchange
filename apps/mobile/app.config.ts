@@ -12,7 +12,7 @@ const config: ExpoConfig = {
   version: "1.0.0",
   orientation: "portrait",
   userInterfaceStyle: "light",
-  icon: "./src/assets/icon.png",
+  icon: "./src/assets/icon-primary-bg.png",
   splash: {
     image: "./src/assets/icon-light-splash.png",
     backgroundColor: "#FF385C",
@@ -20,7 +20,7 @@ const config: ExpoConfig = {
   },
   ios: {
     supportsTablet: true,
-    icon: "./src/assets/icon.png",
+    icon: "./src/assets/icon-primary-bg.png",
     bundleIdentifier: "com.roomxchange.mobile"
   },
   android: {
