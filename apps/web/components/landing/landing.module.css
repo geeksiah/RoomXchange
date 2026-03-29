@@ -597,7 +597,7 @@
   word-spacing: 0.1em;
   font-weight: 700;
   white-space: normal;
-  max-width: 700px;
+  max-width: 640px;
   text-wrap: balance;
 }
 
@@ -664,7 +664,7 @@
   line-height: 1.35;
   color: var(--landing-muted);
   white-space: normal;
-  max-width: 650px;
+  max-width: 620px;
 }
 
 .donationCardColumn {
@@ -1035,7 +1035,7 @@
 .mobileOverlayInner {
   min-height: 100svh;
   height: 100svh;
-  padding: calc(22px + env(safe-area-inset-top)) 22px calc(12px + env(safe-area-inset-bottom));
+  padding: calc(22px + env(safe-area-inset-top)) 20px calc(12px + env(safe-area-inset-bottom));
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 16px;
@@ -1069,9 +1069,10 @@
 .mobileEntryBody {
   align-self: start;
   width: 100%;
-  max-width: 386px;
+  max-width: min(100%, 372px);
   margin: 0 auto;
   display: grid;
+  justify-items: center;
   gap: 24px;
   padding-top: 18px;
 }
@@ -1120,22 +1121,27 @@
 
 .mobileEntryAmountsGroup {
   margin-top: 2px;
+  width: 100%;
+  overflow: hidden;
 }
 
 .mobileOverlay .amountPillsCompact {
+  width: 100%;
   gap: 12px;
   padding-bottom: 0;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .mobileOverlay .amountPill {
   min-height: 46px;
   padding: 0 16px;
   font-size: 0.98rem;
+  flex: 0 0 auto;
 }
 
 .mobileEntryKeypadGroup {
-  margin-top: -2px;
+  width: 100%;
+  margin-top: 10px;
 }
 
 .mobileOverlay .numericKeypad {
@@ -1153,6 +1159,11 @@
   font-size: 1.02rem;
 }
 
+.mobileOverlay .keypadDelete {
+  background: transparent;
+  box-shadow: none;
+}
+
 .mobileOverlayFooter {
   padding-top: 18px;
   padding-bottom: max(8px, env(safe-area-inset-bottom));
@@ -1160,6 +1171,13 @@
   z-index: 2;
   margin-top: auto;
   background: linear-gradient(180deg, rgba(243, 242, 239, 0) 0%, #f3f2ef 22%);
+}
+
+.mobileOverlayFooter,
+.mobileOverlayFooter .mobilePrimaryCta {
+  width: min(100%, 372px);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .mobilePrimaryCta {

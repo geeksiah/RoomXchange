@@ -204,9 +204,8 @@ export function LandingDesktop({
             <div className={`${styles.donationContentColumn} ${styles.revealItem}`} data-parallax-speed="0.08" data-reveal>
               <div className={styles.donationHeadingInline}>
                 <h2 className={styles.donationTitle}>
-                  <span className={styles.titleNoWrap}>
-                    Help us keep RoomXchange <span className={styles.donationAccent}>free forever</span>
-                  </span>
+                  <span className={styles.titleLine}>Help us keep RoomXchange</span>
+                  <span className={`${styles.titleLine} ${styles.donationAccent}`}>free forever</span>
                 </h2>
                 <p className={styles.donationSubtitleSingleLine}>{copy.donationSupport}</p>
               </div>
