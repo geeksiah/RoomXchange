@@ -107,7 +107,12 @@ function resolveApiBaseUrl(override?: string) {
     return roomXchangeConfig.apiUrl;
   }
 
-  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+  if (
+    typeof window !== "undefined" &&
+    typeof window.location !== "undefined" &&
+    typeof window.location.hostname === "string" &&
+    window.location.hostname === "localhost"
+  ) {
     return "http://localhost:4000";
   }
 
