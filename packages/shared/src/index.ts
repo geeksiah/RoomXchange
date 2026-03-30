@@ -135,7 +135,10 @@ const defaultConfig = {
     process.env.EXPO_PUBLIC_ROOMXCHANGE_MEDIA_URL ??
     "https://media.roomxchange.com",
   mapboxToken:
-    process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? process.env.EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? "",
+    process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ??
+    process.env.EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN ??
+    process.env.ROOMXCHANGE_MAPBOX_PUBLIC_TOKEN ??
+    "",
   socketUrl:
     process.env.NEXT_PUBLIC_ROOMXCHANGE_SOCKET_URL ??
     process.env.EXPO_PUBLIC_ROOMXCHANGE_SOCKET_URL ??
@@ -306,6 +309,7 @@ export function formatConversationTimestamp(value: string) {
 type ApiClientOptions = {
   baseUrl?: string;
   getAccessToken?: () => Promise<string | null> | string | null;
+  onUnauthorized?: () => void;
 };
 
 type RequestOptions = {
@@ -318,6 +322,9 @@ type RequestOptions = {
 function parseApiError(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<{ message?: string }>;
+    if (axiosError.response?.status === 401) {
+      return "Your session expired. Please sign in again.";
+    }
     return axiosError.response?.data?.message ?? fallback;
   }
 
@@ -347,6 +354,9 @@ async function request<T>(
     const response = await axios.request(config);
     return schema.parse(response.data);
   } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      client?.onUnauthorized?.();
+    }
     throw new Error(parseApiError(error, "Request failed."));
   }
 }

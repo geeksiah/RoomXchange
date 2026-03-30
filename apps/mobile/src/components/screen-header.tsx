@@ -15,7 +15,7 @@ export function ScreenHeader({
 
   return (
     <View
-      className="bg-white px-4 pb-4"
+      className="mb-4 bg-white px-4 pb-5"
       style={{
         paddingTop: insets.top + 12,
         shadowColor: "#111111",
@@ -25,12 +25,12 @@ export function ScreenHeader({
         elevation: 8
       }}
     >
-      <View className="flex-row items-center justify-between">
-        <View className="w-12 items-start">{left ?? <View className="h-11 w-11" />}</View>
+      <View className="flex-row items-center justify-between gap-3">
+        <View className="min-w-[48px] flex-row items-center justify-start">{left ?? <View className="h-11 w-11" />}</View>
         <Text className="flex-1 text-center font-jakarta-bold text-2xl text-rx-text" numberOfLines={1}>
           {title}
         </Text>
-        <View className="w-12 items-end">{right ?? <View className="h-11 w-11" />}</View>
+        <View className="min-w-[48px] flex-row items-center justify-end">{right ?? <View className="h-11 w-11" />}</View>
       </View>
     </View>
   );

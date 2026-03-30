@@ -5,6 +5,7 @@ import { Alert, FlatList, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { ConversationItem } from "../../src/components/conversation-item";
+import { EmptyStateCard } from "../../src/components/empty-state-card";
 import { ScaleButton } from "../../src/components/scale-button";
 import { ScreenHeader } from "../../src/components/screen-header";
 import { useSession } from "../../src/session-provider";
@@ -142,7 +143,19 @@ export default function MessagesScreen() {
             }
           />
         )}
-        ListEmptyComponent={<Text className="font-jakarta text-sm text-rx-muted">{conversationsQuery.isLoading ? "Loading conversations..." : "No conversations yet."}</Text>}
+        ListEmptyComponent={
+          <EmptyStateCard
+            icon="chatbubbles-outline"
+            title={conversationsQuery.isLoading ? "Loading conversations" : "No conversations yet"}
+            description={
+              conversationsQuery.isLoading
+                ? "We are syncing your latest chats now."
+                : "When you contact an owner, your messages will show up here so you can keep the conversation going."
+            }
+            actionLabel={conversationsQuery.isLoading ? undefined : "Explore listings"}
+            onActionPress={conversationsQuery.isLoading ? undefined : () => router.push("/explore")}
+          />
+        }
       />
     </SafeAreaView>
   );

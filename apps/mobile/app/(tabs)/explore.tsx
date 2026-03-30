@@ -9,9 +9,11 @@ import { Image } from "expo-image";
 import MapView, { Marker } from "react-native-maps";
 import { formatMonthlyPrice, type ListingSummary } from "@roomxchange/shared/src/mobile";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
+import { EmptyStateCard } from "../../src/components/empty-state-card";
 import { FilterSheet } from "../../src/components/filter-sheet";
 import { PropertyCard } from "../../src/components/property-card";
 import { ScaleButton } from "../../src/components/scale-button";
+import { getMapAvailabilityHint, getNativeMapProvider, isNativeMapAvailable } from "../../src/lib/maps";
 import { useSession } from "../../src/session-provider";
 import { useNotificationStore } from "../../src/stores/notification-store";
 import { useSearchStore } from "../../src/stores/search-store";
@@ -86,6 +88,8 @@ export default function ExploreScreen() {
     }
     return listings.filter((item) => item.location === selectedListing.location);
   }, [listings, selectedListing]);
+  const nativeMapAvailable = useMemo(() => isNativeMapAvailable(), []);
+  const mapProvider = useMemo(() => getNativeMapProvider(), []);
 
   useEffect(() => {
     if (!selectedListingId && listings[0]) {
@@ -179,7 +183,19 @@ export default function ExploreScreen() {
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 176 }}
             ListHeaderComponent={<Text className="mb-4 px-1 font-jakarta text-sm text-rx-muted">{listings.length ? `${listings.length} places found` : "Marketplace feed"}</Text>}
             renderItem={({ item }) => <PropertyCard listing={item} onPress={() => router.push(`/listings/${item.listingId}`)} />}
-            ListEmptyComponent={<Text className="rounded-3xl bg-white p-6 font-jakarta text-base text-rx-muted">{feedQuery.isLoading ? "Loading homes for you..." : "No homes match the current filters."}</Text>}
+            ListEmptyComponent={
+              <EmptyStateCard
+                icon="search-outline"
+                title={feedQuery.isLoading ? "Loading homes for you" : "No homes match these filters"}
+                description={
+                  feedQuery.isLoading
+                    ? "We are pulling the latest rooms and apartments for you now."
+                    : "Try a different search, widen your budget, or switch neighborhoods to see more listings."
+                }
+                actionLabel={feedQuery.isLoading ? undefined : "Adjust filters"}
+                onActionPress={feedQuery.isLoading ? undefined : () => setFiltersVisible(true)}
+              />
+            }
           />
           {showBackToTop ? (
             <View className="absolute bottom-32 right-5">
@@ -189,11 +205,22 @@ export default function ExploreScreen() {
             </View>
           ) : null}
         </DismissKeyboardView>
+      ) : !nativeMapAvailable ? (
+        <View className="flex-1 px-4 pb-10 pt-2">
+          <EmptyStateCard
+            icon="map-outline"
+            title="Map view is not ready on this build"
+            description={getMapAvailabilityHint()}
+            actionLabel="Show listings"
+            onActionPress={() => setMode("browse")}
+          />
+        </View>
       ) : (
         <View className="flex-1">
           <MapView
             ref={mapRef}
             style={{ flex: 1 }}
+            provider={mapProvider}
             initialRegion={{
               latitude: selectedListing?.lat ?? 5.6037,
               longitude: selectedListing?.lng ?? -0.187,
@@ -299,7 +326,17 @@ export default function ExploreScreen() {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 120 }}
               renderItem={({ item }) => <MapResultCard listing={item} onPress={() => router.push(`/listings/${item.listingId}`)} />}
-              ListEmptyComponent={<Text className="font-jakarta text-sm text-rx-muted">{feedQuery.isLoading ? "Loading map listings..." : "No properties available on the map."}</Text>}
+              ListEmptyComponent={
+                <EmptyStateCard
+                  icon="locate-outline"
+                  title={feedQuery.isLoading ? "Loading map listings" : "No properties on this map yet"}
+                  description={
+                    feedQuery.isLoading
+                      ? "We are preparing nearby listings for the map."
+                      : "Switch back to the list view or try another area to keep exploring."
+                  }
+                />
+              }
             />
           </Animated.View>
         </View>

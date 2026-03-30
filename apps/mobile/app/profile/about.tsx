@@ -32,7 +32,7 @@ export default function AboutAppScreen() {
         <View className="mt-5 rounded-3xl bg-white p-5">
           <Text className="font-jakarta-bold text-xl text-rx-text">Support RoomXchange</Text>
           <Text className="mt-2 font-jakarta text-sm leading-6 text-rx-muted">
-            Support lives on our website together with download links for the app.
+            Support lives on our website. Tap below to open the RoomXchange support page and make a donation there.
           </Text>
           <ScaleButton
             disabled={!supportUrl}
@@ -45,7 +45,7 @@ export default function AboutAppScreen() {
             className={`mt-4 rounded-full py-4 ${supportUrl ? "bg-rx-accent" : "bg-rx-border"}`}
           >
             <Text className="text-center font-jakarta-bold text-base text-white">
-              {supportUrl ? "Open support website" : "Support link unavailable"}
+              {supportUrl ? "Open support page" : "Support link unavailable"}
             </Text>
           </ScaleButton>
         </View>

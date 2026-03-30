@@ -12,6 +12,7 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
   const hiddenY = Math.max(560, height);
   const translateY = useRef(new Animated.Value(hiddenY)).current;
   const startY = useRef(hiddenY);
+  const openedAtRef = useRef(0);
   const easing = Easing.bezier(0.22, 1, 0.36, 1);
   const {
     location,
@@ -39,6 +40,15 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
         onClose();
       }
     });
+  };
+
+  const closeSheetFromBackdrop = () => {
+    // Ignore the same tap that opened the sheet.
+    if (Date.now() - openedAtRef.current < 220) {
+      return;
+    }
+
+    closeSheet();
   };
 
   const panResponder = useMemo(
@@ -75,6 +85,8 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
       return;
     }
 
+    openedAtRef.current = Date.now();
+
     Animated.timing(translateY, {
       toValue: 0,
       duration: 280,
@@ -84,15 +96,13 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
   }, [easing, hiddenY, translateY, visible]);
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={closeSheet}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={closeSheet} statusBarTranslucent>
       <View className="flex-1 justify-end">
         <View pointerEvents="none" className="absolute inset-0">
           <BlurView intensity={34} tint="light" style={{ flex: 1 }} />
           <View className="absolute inset-0 bg-white/24" />
         </View>
-        <Pressable onPress={closeSheet} className="flex-1 bg-transparent">
-          <View />
-        </Pressable>
+        <Pressable onPress={closeSheetFromBackdrop} className="absolute inset-0 bg-transparent" />
         <Animated.View
           style={{
             transform: [{ translateY }],

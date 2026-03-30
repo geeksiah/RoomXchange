@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { FlatList, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BackIconButton } from "../src/components/back-icon-button";
+import { EmptyStateCard } from "../src/components/empty-state-card";
 import { ScreenHeader } from "../src/components/screen-header";
 import { ScaleButton } from "../src/components/scale-button";
 import { formatConversationTimestamp } from "@roomxchange/shared/src/mobile";
@@ -38,9 +39,9 @@ export default function NotificationsScreen() {
                 }
               }
             }}
-            className="rounded-full bg-rx-background px-3 py-2"
+            className="rounded-full bg-rx-background px-4 py-2.5"
           >
-            <Text className="font-jakarta text-[11px] text-rx-text">Read all</Text>
+            <Text className="font-jakarta-bold text-xs text-rx-text">Read all</Text>
           </ScaleButton>
         }
       />
@@ -131,7 +132,13 @@ export default function NotificationsScreen() {
             </View>
           </ScaleButton>
         )}
-        ListEmptyComponent={<Text className="font-jakarta text-sm text-rx-muted">Nothing new right now.</Text>}
+        ListEmptyComponent={
+          <EmptyStateCard
+            icon="notifications-outline"
+            title="You’re all caught up"
+            description="New activity, alerts, and updates from RoomXchange will appear here as they happen."
+          />
+        }
       />
     </SafeAreaView>
   );

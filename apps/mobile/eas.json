@@ -4,36 +4,36 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "development": {
-      "environment": "development",
+    "base": {
+      "node": "20.19.5",
       "env": {
-        "EAS_SKIP_AUTO_FINGERPRINT": "1"
-      },
+        "EAS_SKIP_AUTO_FINGERPRINT": "1",
+        "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
+        "EXPO_NO_TELEMETRY": "1"
+      }
+    },
+    "development": {
+      "extends": "base",
+      "environment": "development",
       "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
+      "extends": "base",
       "environment": "preview",
-      "env": {
-        "EAS_SKIP_AUTO_FINGERPRINT": "1"
-      },
       "distribution": "internal"
     },
     "apk": {
+      "extends": "base",
       "environment": "production",
-      "env": {
-        "EAS_SKIP_AUTO_FINGERPRINT": "1"
-      },
       "distribution": "internal",
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
+      "extends": "base",
       "environment": "production",
-      "env": {
-        "EAS_SKIP_AUTO_FINGERPRINT": "1"
-      },
       "autoIncrement": true
     }
   }

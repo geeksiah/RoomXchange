@@ -133,6 +133,32 @@ function LandingPageContent({ paystackPublicKey }: { paystackPublicKey: string |
     }
   }, [donationSuccess, isMobile]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || donationSuccess) {
+      return;
+    }
+
+    const syncSupportStateFromHash = () => {
+      if (window.location.hash !== "#support") {
+        return;
+      }
+
+      if (isMobile) {
+        setMobileScreen("entry");
+        return;
+      }
+
+      document.getElementById("support")?.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "start"
+      });
+    };
+
+    syncSupportStateFromHash();
+    window.addEventListener("hashchange", syncSupportStateFromHash);
+    return () => window.removeEventListener("hashchange", syncSupportStateFromHash);
+  }, [donationSuccess, isMobile, prefersReducedMotion]);
+
   useBodyScrollLock(isMobile && mobileScreen !== "landing");
 
   const socialLinks = useMemo<SocialLink[]>(

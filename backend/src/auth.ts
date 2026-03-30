@@ -58,6 +58,25 @@ function randomPassword() {
   return `${randomUUID()}Aa!1`;
 }
 
+function toProviderMessage(error: unknown, fallback: string) {
+  if (error instanceof AppError) {
+    return error;
+  }
+
+  const message = error instanceof Error ? error.message : fallback;
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("exists") || normalized.includes("alias")) {
+    return new AppError(409, message);
+  }
+
+  if (normalized.includes("password") || normalized.includes("invalid parameter") || normalized.includes("validation")) {
+    return new AppError(400, message);
+  }
+
+  return new AppError(502, message || fallback);
+}
+
 function decodeJwtPayload<T>(token: string) {
   const [, payload] = token.split(".");
   return JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as T;
@@ -107,14 +126,14 @@ async function getUserItem(userId: string) {
 
 async function findUserByIdentifier(identifier: string) {
   const normalized = normalizeIdentifier(identifier);
+  const lookupField = isEmail(normalized) ? "email" : "phone";
   const result = await db.send(
     new ScanCommand({
       TableName: env.TABLE_NAME,
-      FilterExpression: "#entity = :entity AND (#phone = :identifier OR #email = :identifier)",
+      FilterExpression: "#entity = :entity AND #lookup = :identifier",
       ExpressionAttributeNames: {
         "#entity": "entity",
-        "#phone": "phone",
-        "#email": "email"
+        "#lookup": lookupField
       },
       ExpressionAttributeValues: {
         ":entity": "USER",
@@ -281,44 +300,48 @@ async function createOrUpdatePasswordUser(input: {
   password: string;
   username?: string | null;
 }) {
-  const username = input.username ?? randomUUID();
+  const username = input.username ?? input.phone;
 
-  if (!input.username) {
+  try {
+    if (!input.username) {
+      await cognito.send(
+        new AdminCreateUserCommand({
+          UserPoolId: env.USER_POOL_ID,
+          Username: username,
+          MessageAction: "SUPPRESS",
+          UserAttributes: [
+            { Name: "phone_number", Value: input.phone },
+            { Name: "name", Value: input.name },
+            { Name: "phone_number_verified", Value: "false" },
+            ...(input.email ? [{ Name: "email", Value: input.email }] : [])
+          ]
+        })
+      );
+    } else {
+      await cognito.send(
+        new AdminUpdateUserAttributesCommand({
+          UserPoolId: env.USER_POOL_ID,
+          Username: username,
+          UserAttributes: [
+            { Name: "phone_number", Value: input.phone },
+            { Name: "name", Value: input.name },
+            ...(input.email ? [{ Name: "email", Value: input.email }] : [])
+          ]
+        })
+      );
+    }
+
     await cognito.send(
-      new AdminCreateUserCommand({
+      new AdminSetUserPasswordCommand({
         UserPoolId: env.USER_POOL_ID,
         Username: username,
-        MessageAction: "SUPPRESS",
-        UserAttributes: [
-          { Name: "phone_number", Value: input.phone },
-          { Name: "name", Value: input.name },
-          { Name: "phone_number_verified", Value: "false" },
-          ...(input.email ? [{ Name: "email", Value: input.email }] : [])
-        ]
+        Password: input.password,
+        Permanent: true
       })
     );
-  } else {
-    await cognito.send(
-      new AdminUpdateUserAttributesCommand({
-        UserPoolId: env.USER_POOL_ID,
-        Username: username,
-        UserAttributes: [
-          { Name: "phone_number", Value: input.phone },
-          { Name: "name", Value: input.name },
-          ...(input.email ? [{ Name: "email", Value: input.email }] : [])
-        ]
-      })
-    );
+  } catch (error) {
+    throw toProviderMessage(error, "Unable to prepare the account for signup.");
   }
-
-  await cognito.send(
-    new AdminSetUserPasswordCommand({
-      UserPoolId: env.USER_POOL_ID,
-      Username: username,
-      Password: input.password,
-      Permanent: true
-    })
-  );
 
   return {
     cognitoUsername: username,

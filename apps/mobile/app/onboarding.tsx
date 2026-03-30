@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "expo-router";
-import { Animated, Text, View, useWindowDimensions } from "react-native";
+import { Animated, Easing, PanResponder, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { setOnboardingComplete } from "../src/onboarding";
@@ -26,9 +26,31 @@ const slides = [
 export default function OnboardingScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const listRef = useRef<Animated.FlatList<(typeof slides)[number]>>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
   const [index, setIndex] = useState(0);
+  const transition = useRef(new Animated.Value(1)).current;
+  const hasMounted = useRef(false);
+  const indexRef = useRef(index);
+  const currentSlide = slides[index];
+
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      transition.setValue(1);
+      return;
+    }
+
+    transition.setValue(0);
+    Animated.timing(transition, {
+      toValue: 1,
+      duration: 260,
+      easing: Easing.bezier(0.22, 1, 0.36, 1),
+      useNativeDriver: true
+    }).start();
+  }, [index, transition]);
 
   const continueToLogin = async () => {
     await setOnboardingComplete(true);
@@ -41,8 +63,36 @@ export default function OnboardingScreen() {
       return;
     }
 
-    listRef.current?.scrollToIndex({ index: index + 1, animated: true });
+    setIndex((current) => Math.min(current + 1, slides.length - 1));
   };
+
+  const goPrevious = () => {
+    setIndex((current) => Math.max(current - 1, 0));
+  };
+
+  const swipeResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 18,
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dx <= -56) {
+            if (indexRef.current >= slides.length - 1) {
+              void continueToLogin();
+              return;
+            }
+
+            setIndex((current) => Math.min(current + 1, slides.length - 1));
+            return;
+          }
+
+          if (gestureState.dx >= 56) {
+            goPrevious();
+          }
+        }
+      }),
+    []
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -55,83 +105,54 @@ export default function OnboardingScreen() {
           </View>
         </View>
 
-        <Animated.FlatList
-          ref={listRef}
-          data={slides}
-          horizontal
-          pagingEnabled
-          bounces={false}
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(_, slideIndex) => String(slideIndex)}
-          onMomentumScrollEnd={(event) => {
-            const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-            setIndex(nextIndex);
-          }}
-          onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
-            useNativeDriver: false
-          })}
-          scrollEventThrottle={16}
-          renderItem={({ item, index: slideIndex }) => {
-            const inputRange = [(slideIndex - 1) * width, slideIndex * width, (slideIndex + 1) * width];
-            const opacity = scrollX.interpolate({
-              inputRange,
-              outputRange: [0.35, 1, 0.35],
-              extrapolate: "clamp"
-            });
-            const translateY = scrollX.interpolate({
-              inputRange,
-              outputRange: [26, 0, 26],
-              extrapolate: "clamp"
-            });
-            const imageScale = scrollX.interpolate({
-              inputRange,
-              outputRange: [0.92, 1, 0.92],
-              extrapolate: "clamp"
-            });
+        <View className="flex-1 overflow-hidden" {...swipeResponder.panHandlers}>
+          <Animated.View
+            style={{
+              flex: 1,
+              opacity: transition,
+              transform: [
+                {
+                  translateX: transition.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0]
+                  })
+                }
+              ]
+            }}
+          >
+            <View key={index} style={{ width }} className="flex-1 px-6">
+              <View className="flex-1 items-center justify-center">
+                <View className="items-center">
+                  <Image
+                    source={currentSlide.image}
+                    style={{ width: Math.min(width - 56, 340), height: Math.min(width * 1.1, 360) }}
+                    contentFit="contain"
+                  />
+                </View>
 
-            return (
-              <View style={{ width }} className="flex-1 px-6">
-                <Animated.View style={{ flex: 1, opacity, transform: [{ translateY }] }} className="items-center justify-center">
-                  <Animated.View style={{ transform: [{ scale: imageScale }] }} className="items-center">
-                    <Image source={item.image} style={{ width: Math.min(width - 56, 340), height: Math.min(width * 1.1, 360) }} contentFit="contain" />
-                  </Animated.View>
-
-                  <View className="mt-10 max-w-[340px] items-center">
-                    <Text className="text-center font-jakarta-bold text-[34px] leading-[42px] text-rx-text">
-                      {item.titleBefore}
-                      <Text className="text-rx-accent">{item.titleAccent}</Text>
-                      {item.titleAfter}
-                    </Text>
-                    <Text className="mt-4 text-center font-jakarta text-sm leading-6 text-rx-muted">{item.description}</Text>
-                    <Text className="mt-4 font-jakarta text-xs uppercase tracking-[1.4px] text-rx-muted">
-                      {slideIndex === 0 ? "Swipe to continue" : "Click below to explore"}
-                    </Text>
-                  </View>
-                </Animated.View>
+                <View className="mt-10 max-w-[340px] items-center">
+                  <Text className="text-center font-jakarta-bold text-[34px] leading-[42px] text-rx-text">
+                    {currentSlide.titleBefore}
+                    <Text className="text-rx-accent">{currentSlide.titleAccent}</Text>
+                    {currentSlide.titleAfter}
+                  </Text>
+                  <Text className="mt-4 text-center font-jakarta text-sm leading-6 text-rx-muted">{currentSlide.description}</Text>
+                  <Text className="mt-4 font-jakarta text-xs uppercase tracking-[1.4px] text-rx-muted">
+                    {index === 0 ? "Swipe to continue" : "Click below to explore"}
+                  </Text>
+                </View>
               </View>
-            );
-          }}
-        />
+            </View>
+          </Animated.View>
+        </View>
 
         <View className="px-6">
           <View className="mb-6 flex-row items-center justify-center gap-2">
             {slides.map((_, slideIndex) => {
-              const inputRange = [(slideIndex - 1) * width, slideIndex * width, (slideIndex + 1) * width];
-              const dotWidth = scrollX.interpolate({
-                inputRange,
-                outputRange: [10, 28, 10],
-                extrapolate: "clamp"
-              });
-              const opacity = scrollX.interpolate({
-                inputRange,
-                outputRange: [0.35, 1, 0.35],
-                extrapolate: "clamp"
-              });
-
               return (
                 <Animated.View
                   key={slideIndex}
-                  style={{ width: dotWidth, opacity }}
+                  style={{ width: slideIndex === index ? 28 : 10, opacity: slideIndex === index ? 1 : 0.35 }}
                   className="h-2.5 rounded-full bg-rx-accent"
                 />
               );

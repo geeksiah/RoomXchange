@@ -46,7 +46,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     () =>
       createMobileApiClient({
         baseUrl: apiBaseUrl,
-        getAccessToken: () => session?.tokens.accessToken ?? null
+        getAccessToken: () => session?.tokens.accessToken ?? null,
+        onUnauthorized: () => {
+          setSessionState(null);
+          void SecureStore.deleteItemAsync(storageKey);
+        }
       }),
     [apiBaseUrl, session?.tokens.accessToken]
   );

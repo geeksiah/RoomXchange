@@ -15,7 +15,10 @@ const defaultConfig = {
     process.env.EXPO_PUBLIC_ROOMXCHANGE_MEDIA_URL ??
     "https://media.roomxchange.com",
   mapboxToken:
-    process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? process.env.EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? "",
+    process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ??
+    process.env.EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN ??
+    process.env.ROOMXCHANGE_MAPBOX_PUBLIC_TOKEN ??
+    "",
   socketUrl:
     process.env.NEXT_PUBLIC_ROOMXCHANGE_SOCKET_URL ??
     process.env.EXPO_PUBLIC_ROOMXCHANGE_SOCKET_URL ??

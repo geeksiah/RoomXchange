@@ -52,6 +52,7 @@ import {
   type ConversationListResponse,
   type ConversationMessageListQuery,
   type ConversationMessageListResponse,
+  type DeleteConversationMessagesInput,
   type FeedQueryInput,
   type FeedResponse,
   type Listing,
@@ -68,6 +69,7 @@ import {
   type PushTokenUpsertInput,
   type RealtimeEvent,
   type ReminderPreference,
+  type ReminderUpsertInput,
   type RemindersListResponse,
   type Report,
   type ReportCreateInput,
@@ -88,7 +90,10 @@ const defaultConfig = {
     process.env.EXPO_PUBLIC_ROOMXCHANGE_MEDIA_URL ??
     "https://media.roomxchange.com",
   mapboxToken:
-    process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? process.env.EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN ?? "",
+    process.env.NEXT_PUBLIC_MAPBOX_PUBLIC_TOKEN ??
+    process.env.EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN ??
+    process.env.ROOMXCHANGE_MAPBOX_PUBLIC_TOKEN ??
+    "",
   socketUrl:
     process.env.NEXT_PUBLIC_ROOMXCHANGE_SOCKET_URL ??
     process.env.EXPO_PUBLIC_ROOMXCHANGE_SOCKET_URL ??
@@ -136,6 +141,7 @@ export function parseRealtimeEvent(value: unknown): RealtimeEvent {
 type ApiClientOptions = {
   baseUrl?: string;
   getAccessToken?: () => Promise<string | null> | string | null;
+  onUnauthorized?: () => void;
 };
 
 type RequestOptions = {
@@ -147,8 +153,64 @@ type RequestOptions = {
 
 function parseApiError(error: unknown, fallback: string) {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    return axiosError.response?.data?.message ?? fallback;
+    const axiosError = error as AxiosError<
+      | {
+          message?: string;
+          error?: string;
+          detail?: string;
+          details?: string | string[];
+        }
+      | string
+    >;
+    const responseData = axiosError.response?.data;
+
+    if (axiosError.response?.status === 401) {
+      return "Your session expired. Please sign in again.";
+    }
+
+    if (typeof responseData === "string" && responseData.trim()) {
+      return responseData.trim();
+    }
+
+    if (responseData && typeof responseData === "object") {
+      if (typeof responseData.message === "string" && responseData.message.trim()) {
+        return responseData.message.trim();
+      }
+
+      if (typeof responseData.error === "string" && responseData.error.trim()) {
+        return responseData.error.trim();
+      }
+
+      if (typeof responseData.detail === "string" && responseData.detail.trim()) {
+        return responseData.detail.trim();
+      }
+
+      if (typeof responseData.details === "string" && responseData.details.trim()) {
+        return responseData.details.trim();
+      }
+
+      if (Array.isArray(responseData.details) && responseData.details.length > 0) {
+        return responseData.details.join(", ");
+      }
+    }
+
+    if (!axiosError.response) {
+      return axiosError.message?.trim() || "Network request failed.";
+    }
+
+    if (
+      typeof axiosError.message === "string" &&
+      axiosError.message.trim() &&
+      !/^Request failed with status code \d+$/i.test(axiosError.message.trim())
+    ) {
+      return axiosError.message.trim();
+    }
+
+    return `${fallback} (status ${axiosError.response.status})`;
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
   }
 
   return fallback;
@@ -161,9 +223,15 @@ async function request<T>(
   client?: ApiClientOptions
 ) {
   const resolvedToken = options.token ?? (await client?.getAccessToken?.());
+  const baseURL = resolveApiBaseUrl(client?.baseUrl);
+
+  if (!baseURL) {
+    throw new Error("RoomXchange API URL is missing from this mobile build.");
+  }
+
   const config: AxiosRequestConfig = {
     url: path,
-    baseURL: resolveApiBaseUrl(client?.baseUrl),
+    baseURL,
     method: options.method ?? "GET",
     headers: {
       ...(resolvedToken ? { authorization: `Bearer ${resolvedToken}` } : {}),
@@ -177,6 +245,9 @@ async function request<T>(
     const response = await axios.request(config);
     return schema.parse(response.data);
   } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      client?.onUnauthorized?.();
+    }
     throw new Error(parseApiError(error, "Request failed."));
   }
 }

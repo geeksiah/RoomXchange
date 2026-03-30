@@ -6,6 +6,7 @@ import { FlatList, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar } from "../../src/components/avatar";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
+import { EmptyStateCard } from "../../src/components/empty-state-card";
 import { FilterSheet } from "../../src/components/filter-sheet";
 import { PropertyCard } from "../../src/components/property-card";
 import { ScaleButton } from "../../src/components/scale-button";
@@ -89,13 +90,17 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 176 }}
           renderItem={({ item }) => <PropertyCard listing={item} onPress={() => router.push(`/listings/${item.listingId}`)} />}
           ListEmptyComponent={
-            <View className="rounded-3xl bg-white p-6">
-              <Text className="font-jakarta text-base text-rx-muted">
-                {feedQuery.isLoading
-                  ? "Loading homes for you..."
-                  : "No homes match the current filters."}
-              </Text>
-            </View>
+            <EmptyStateCard
+              icon="home-outline"
+              title={feedQuery.isLoading ? "Loading homes for you" : "No homes match these filters"}
+              description={
+                feedQuery.isLoading
+                  ? "We are getting the latest rooms and apartments ready for your feed."
+                  : "Try a broader search, adjust your filters, or explore another area to discover more places."
+              }
+              actionLabel={feedQuery.isLoading ? undefined : "Adjust filters"}
+              onActionPress={feedQuery.isLoading ? undefined : () => setFiltersVisible(true)}
+            />
           }
         />
 

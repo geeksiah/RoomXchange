@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import { ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { formatListingSubtypeLabel } from "@roomxchange/shared/src/mobile";
+import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { BackIconButton } from "../../src/components/back-icon-button";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { PriceRangeSlider } from "../../src/components/price-range-slider";
@@ -10,8 +12,23 @@ import { ScaleButton } from "../../src/components/scale-button";
 import { useSession } from "../../src/session-provider";
 import { useNotificationStore } from "../../src/stores/notification-store";
 
+function getFriendlyAlertError(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+
+  if (message.includes("sign in again") || message.includes("authentication is required")) {
+    return "Your session expired. Sign in again to manage alerts.";
+  }
+
+  if (message.includes("network error") || message.includes("network request failed")) {
+    return "We couldn't reach RoomXchange right now. Check your internet connection and try again.";
+  }
+
+  return "We could not save this alert right now.";
+}
+
 export default function AlertsScreen() {
-  const { api } = useSession();
+  const router = useRouter();
+  const { api, session } = useSession();
   const reminders = useNotificationStore((state) => state.reminders);
   const upsertReminder = useNotificationStore((state) => state.upsertReminder);
   const toggleReminder = useNotificationStore((state) => state.toggleReminder);
@@ -35,6 +52,20 @@ export default function AlertsScreen() {
   const toggleSubtype = (value: "studio" | "single_room_sc" | "one_bedroom" | "two_bedroom_plus") => {
     setListingSubtypes((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
   };
+
+  if (!session) {
+    return (
+      <SafeAreaView className="flex-1 bg-rx-background">
+        <View className="flex-1 p-4">
+          <AuthRedirectCard
+            title="Sign in to manage saved alerts"
+            description="Create, pause, and remove listing alerts after you sign in."
+            redirectTo="/profile/alerts"
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
@@ -138,7 +169,12 @@ export default function AlertsScreen() {
                 </ScaleButton>
                 <ScaleButton
                   onPress={async () => {
-                    if (!location.trim()) {
+                    if (submitting) {
+                      return;
+                    }
+
+                    const normalizedLocation = location.trim();
+                    if (!normalizedLocation) {
                       setFeedback("Add a location to save this alert.");
                       return;
                     }
@@ -147,7 +183,7 @@ export default function AlertsScreen() {
                     setFeedback(null);
                     try {
                       const reminder = await api.upsertReminder({
-                        location,
+                        location: normalizedLocation,
                         propertyType,
                         listingSubtypes,
                         minBudget: minPrice,
@@ -157,8 +193,15 @@ export default function AlertsScreen() {
                       upsertReminder(reminder);
                       resetForm();
                       setFeedback("Alert saved.");
-                    } catch {
-                      setFeedback("We could not save this alert right now.");
+                    } catch (error) {
+                      const nextFeedback = getFriendlyAlertError(error);
+                      setFeedback(nextFeedback);
+                      if (nextFeedback.includes("Sign in again")) {
+                        router.push({
+                          pathname: "/auth/login",
+                          params: { redirect: "/profile/alerts" }
+                        } as never);
+                      }
                     } finally {
                       setSubmitting(false);
                     }
@@ -207,9 +250,9 @@ export default function AlertsScreen() {
                                 maxBudget: reminder.maxBudget,
                                 enabled: value
                               });
-                            } catch {
+                            } catch (error) {
                               toggleReminder(reminder.id, reminder.enabled);
-                              setFeedback("We could not update this alert right now.");
+                              setFeedback(getFriendlyAlertError(error));
                             }
                           }}
                           trackColor={{ false: "#EAEAEA", true: "#FFB6C4" }}
@@ -222,8 +265,8 @@ export default function AlertsScreen() {
                             try {
                               await api.deleteReminder(reminder.id);
                               deleteReminder(reminder.id);
-                            } catch {
-                              setFeedback("We could not remove this alert right now.");
+                            } catch (error) {
+                              setFeedback(getFriendlyAlertError(error));
                             }
                           }}
                           className="rounded-full bg-white px-4 py-2"

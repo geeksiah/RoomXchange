@@ -54,6 +54,17 @@ export function getCurrentUserId(event: APIGatewayProxyEvent) {
   return getClaims(event).sub ?? null;
 }
 
+function isZodLikeError(error: unknown): error is { flatten: () => unknown } {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "issues" in error &&
+      Array.isArray((error as { issues?: unknown }).issues) &&
+      "flatten" in error &&
+      typeof (error as { flatten?: unknown }).flatten === "function"
+  );
+}
+
 export function handleError(error: unknown) {
   if (error instanceof AppError) {
     return json(error.statusCode, {
@@ -62,7 +73,7 @@ export function handleError(error: unknown) {
     });
   }
 
-  if (error instanceof z.ZodError) {
+  if (error instanceof z.ZodError || isZodLikeError(error)) {
     return json(400, {
       message: "Validation failed.",
       details: error.flatten()

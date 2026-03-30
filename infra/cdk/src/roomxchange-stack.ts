@@ -132,6 +132,13 @@ export class RoomXchangeStack extends Stack {
       signInAliases: {
         phone: true
       },
+      passwordPolicy: {
+        minLength: 6,
+        requireDigits: false,
+        requireLowercase: false,
+        requireUppercase: false,
+        requireSymbols: false
+      },
       autoVerify: {
         phone: true
       },

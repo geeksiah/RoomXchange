@@ -9,6 +9,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      axios: path.resolve(__dirname, "packages/shared/node_modules/axios/index.js"),
       "@roomxchange/contracts": path.resolve(__dirname, "packages/contracts/src/index.ts"),
       "@roomxchange/shared": path.resolve(__dirname, "packages/shared/src/index.ts")
     }

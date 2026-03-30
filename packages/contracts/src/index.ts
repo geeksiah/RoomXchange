@@ -26,7 +26,7 @@ export const phoneSchema = z
   .regex(/^(\+[1-9]\d{7,14}|233\d{9}|0\d{9})$/, "Enter a valid phone number.");
 
 export const emailSchema = z.string().trim().email();
-export const passwordSchema = z.string().min(8).max(128);
+export const passwordSchema = z.string().min(6).max(128);
 
 const optionalEmailSchema = z.preprocess((value) => {
   if (typeof value === "string" && value.trim() === "") {

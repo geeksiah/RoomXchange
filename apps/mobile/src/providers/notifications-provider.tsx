@@ -119,7 +119,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     setPushConfigured(Boolean(projectId));
 
     const boot = async () => {
-      if (!pushEnabled || !settings.pushEnabled) {
+      if (!session || !pushEnabled || !settings.pushEnabled) {
         setPermissionStatus("unknown");
         setExpoPushToken(null);
         return;
@@ -157,7 +157,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.remove();
     };
-  }, [createNotification, pushEnabled, setExpoPushToken, setPermissionStatus, setPushConfigured, settings.pushEnabled]);
+  }, [createNotification, pushEnabled, session, setExpoPushToken, setPermissionStatus, setPushConfigured, settings.pushEnabled]);
 
   useEffect(() => {
     let active = true;

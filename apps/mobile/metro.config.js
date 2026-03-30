@@ -14,10 +14,17 @@ const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
 
 const config = getDefaultConfig(__dirname);
-config.watchFolders = [...new Set([...(config.watchFolders ?? []), path.resolve(__dirname, "../../")])];
+const workspaceRoot = path.resolve(__dirname, "../../");
+const workspacePackageRoots = [
+  path.resolve(workspaceRoot, "packages/shared"),
+  path.resolve(workspaceRoot, "packages/contracts"),
+  path.resolve(workspaceRoot, "node_modules")
+];
+
+config.watchFolders = [...new Set([...(config.watchFolders ?? []), ...workspacePackageRoots])];
 config.resolver.nodeModulesPaths = [
   path.resolve(__dirname, "node_modules"),
-  path.resolve(__dirname, "../../node_modules"),
+  path.resolve(workspaceRoot, "node_modules"),
   ...(config.resolver.nodeModulesPaths ?? [])
 ];
 

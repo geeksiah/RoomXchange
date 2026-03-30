@@ -19,7 +19,9 @@ import {
 } from "@roomxchange/shared/src/mobile";
 import { searchGhanaLocations } from "../ghana-locations";
 import { DismissKeyboardView } from "./dismiss-keyboard-view";
+import { EmptyStateCard } from "./empty-state-card";
 import { ScaleButton } from "./scale-button";
+import { getMapAvailabilityHint, getNativeMapProvider, isNativeMapAvailable } from "../lib/maps";
 import { useSession } from "../session-provider";
 
 type Suggestion = {
@@ -186,6 +188,8 @@ export function AddListingWizard({ mode = "create", listingId, initialValues, on
     }),
     [lat, lng]
   );
+  const nativeMapAvailable = useMemo(() => isNativeMapAvailable(), []);
+  const mapProvider = useMemo(() => getNativeMapProvider(), []);
 
   const addAmenity = (value: string) => {
     const normalized = value.trim();
@@ -512,9 +516,25 @@ export function AddListingWizard({ mode = "create", listingId, initialValues, on
             </Pressable>
           ))}
           <View className="mt-4 overflow-hidden rounded-3xl">
-            <MapView style={{ width: "100%", height: 260 }} initialRegion={currentRegion} region={currentRegion} onPress={onMapPress}>
-              <Marker coordinate={{ latitude: currentRegion.latitude, longitude: currentRegion.longitude }} />
-            </MapView>
+            {nativeMapAvailable ? (
+              <MapView
+                style={{ width: "100%", height: 260 }}
+                provider={mapProvider}
+                initialRegion={currentRegion}
+                region={currentRegion}
+                onPress={onMapPress}
+              >
+                <Marker coordinate={{ latitude: currentRegion.latitude, longitude: currentRegion.longitude }} />
+              </MapView>
+            ) : (
+              <View className="bg-rx-background p-4">
+                <EmptyStateCard
+                  icon="map-outline"
+                  title="Map pinning is unavailable in this build"
+                  description={getMapAvailabilityHint()}
+                />
+              </View>
+            )}
           </View>
         </View>
         ) : null}
