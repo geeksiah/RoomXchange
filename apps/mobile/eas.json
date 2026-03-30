@@ -36,5 +36,12 @@
       "environment": "production",
       "autoIncrement": true
     }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "track": "production"
+      }
+    }
   }
 }
