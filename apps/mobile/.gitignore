@@ -7,3 +7,6 @@ expo-env.d.ts
 google-services.json
 GoogleService-Info.plist
 # @end expo-cli
+
+# Local release credentials
+credentials/
