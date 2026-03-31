@@ -9,6 +9,7 @@ import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view"
 import { PriceRangeSlider } from "../../src/components/price-range-slider";
 import { ScreenHeader } from "../../src/components/screen-header";
 import { ScaleButton } from "../../src/components/scale-button";
+import { SessionLoadingCard } from "../../src/components/session-loading-card";
 import { useSession } from "../../src/session-provider";
 import { useNotificationStore } from "../../src/stores/notification-store";
 
@@ -28,7 +29,7 @@ function getFriendlyAlertError(error: unknown) {
 
 export default function AlertsScreen() {
   const router = useRouter();
-  const { api, session } = useSession();
+  const { api, session, hydrated } = useSession();
   const reminders = useNotificationStore((state) => state.reminders);
   const upsertReminder = useNotificationStore((state) => state.upsertReminder);
   const toggleReminder = useNotificationStore((state) => state.toggleReminder);
@@ -52,6 +53,16 @@ export default function AlertsScreen() {
   const toggleSubtype = (value: "studio" | "single_room_sc" | "one_bedroom" | "two_bedroom_plus") => {
     setListingSubtypes((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
   };
+
+  if (!hydrated) {
+    return (
+      <SafeAreaView className="flex-1 bg-rx-background">
+        <View className="flex-1 p-4">
+          <SessionLoadingCard description="We are restoring your saved alerts and account details." />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!session) {
     return (

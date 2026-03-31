@@ -9,11 +9,12 @@ import { BackIconButton } from "../../src/components/back-icon-button";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { ScreenHeader } from "../../src/components/screen-header";
 import { ScaleButton } from "../../src/components/scale-button";
+import { SessionLoadingCard } from "../../src/components/session-loading-card";
 import { useSession } from "../../src/session-provider";
 
 export default function ProfileListingsScreen() {
   const router = useRouter();
-  const { session, api } = useSession();
+  const { session, api, hydrated } = useSession();
   const queryClient = useQueryClient();
   const [listingSearch, setListingSearch] = useState("");
   const [listingStatus, setListingStatus] = useState<"all" | "published" | "archived">("all");
@@ -74,6 +75,16 @@ export default function ProfileListingsScreen() {
 
   const publishedCount = sourceListings.filter((listing) => listing.status === "published").length;
   const archivedCount = sourceListings.filter((listing) => listing.status === "archived").length;
+
+  if (!hydrated) {
+    return (
+      <SafeAreaView className="flex-1 bg-rx-background">
+        <View className="flex-1 p-4">
+          <SessionLoadingCard description="We are restoring your listings and account details." />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!session) {
     return (

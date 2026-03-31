@@ -34,12 +34,32 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const apiBaseUrl = resolveMobileApiUrl();
 
   useEffect(() => {
-    SecureStore.getItemAsync(storageKey).then((value) => {
-      if (value) {
-        setSessionState(JSON.parse(value) as AuthSession);
+    let active = true;
+
+    const restoreSession = async () => {
+      try {
+        const value = await SecureStore.getItemAsync(storageKey);
+        if (!active || !value) {
+          return;
+        }
+
+        try {
+          setSessionState(JSON.parse(value) as AuthSession);
+        } catch {
+          await SecureStore.deleteItemAsync(storageKey);
+        }
+      } finally {
+        if (active) {
+          setHydrated(true);
+        }
       }
-      setHydrated(true);
-    });
+    };
+
+    void restoreSession();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const remoteApi = useMemo(
@@ -58,10 +78,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const setSession = async (value: AuthSession | null) => {
     setSessionState(value);
-    if (value) {
-      await SecureStore.setItemAsync(storageKey, JSON.stringify(value));
-    } else {
-      await SecureStore.deleteItemAsync(storageKey);
+    try {
+      if (value) {
+        await SecureStore.setItemAsync(storageKey, JSON.stringify(value));
+      } else {
+        await SecureStore.deleteItemAsync(storageKey);
+      }
+    } catch {
+      return;
     }
   };
 

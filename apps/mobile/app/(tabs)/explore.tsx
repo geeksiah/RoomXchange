@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -45,10 +45,23 @@ export default function ExploreScreen() {
     extrapolate: "clamp"
   });
 
+  const animateSheetTo = useCallback(
+    (toValue: number) => {
+      Animated.timing(sheetTranslateY, {
+        toValue,
+        duration: 240,
+        easing,
+        useNativeDriver: true
+      }).start();
+    },
+    [easing, sheetTranslateY]
+  );
+
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 5,
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+          Math.abs(gestureState.dy) > 4 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
         onPanResponderGrant: () => {
           sheetStart.current = (sheetTranslateY as any).__getValue();
         },
@@ -61,15 +74,10 @@ export default function ExploreScreen() {
           const destination =
             snapTargets.reduce((closest, value) => (Math.abs(value - current) < Math.abs(closest - current) ? value : closest), collapsedSheetY);
 
-          Animated.timing(sheetTranslateY, {
-            toValue: destination,
-            duration: 240,
-            easing,
-            useNativeDriver: true
-          }).start();
+          animateSheetTo(destination);
         }
       }),
-    [collapsedSheetY, easing, hiddenSheetY, midSheetY, sheetTranslateY]
+    [animateSheetTo, collapsedSheetY, hiddenSheetY, midSheetY, sheetTranslateY]
   );
 
   const feedQuery = useQuery({
@@ -235,12 +243,7 @@ export default function ExploreScreen() {
                 pinColor={listing.listingId === selectedListing?.listingId ? "#111111" : "#FF385C"}
                 onPress={() => {
                   setSelectedListingId(listing.listingId);
-                  Animated.timing(sheetTranslateY, {
-                    toValue: midSheetY,
-                    duration: 240,
-                    easing,
-                    useNativeDriver: true
-                  }).start();
+                  animateSheetTo(midSheetY);
                 }}
               />
             ))}
@@ -290,19 +293,37 @@ export default function ExploreScreen() {
             }}
             className="absolute inset-x-0 bottom-0 rounded-t-[30px] bg-rx-background px-4 pb-7 pt-4"
           >
-            <View {...panResponder.panHandlers} className="pb-3">
+            <View
+              {...panResponder.panHandlers}
+              className="pb-4"
+            >
               <View className="mb-3 h-1.5 w-14 self-center rounded-full bg-rx-border" />
+              <ScaleButton
+                onPress={() => {
+                  const current = (sheetTranslateY as any).__getValue() as number;
+                  animateSheetTo(current <= midSheetY ? collapsedSheetY : midSheetY);
+                }}
+                className="rounded-[24px]"
+              >
+                <View className="flex-row items-center justify-between rounded-[24px] bg-white px-4 py-4">
+                  <View className="mr-3 flex-1">
+                    <Text className="font-jakarta-bold text-xl text-rx-text">Map results</Text>
+                    <Text className="mt-1 font-jakarta text-xs text-rx-muted">
+                      {selectedListing
+                        ? `${mapSheetListings.length} listing${mapSheetListings.length === 1 ? "" : "s"} in ${selectedListing.location}`
+                        : "No nearby listings"}
+                    </Text>
+                  </View>
+                  {selectedListing ? (
+                    <View className="rounded-full bg-rx-background px-4 py-2">
+                      <Text className="font-jakarta text-sm text-rx-accent">View area</Text>
+                    </View>
+                  ) : null}
+                </View>
+              </ScaleButton>
             </View>
-            <View className="mb-4 flex-row items-center justify-between">
-              <View>
-                <Text className="font-jakarta-bold text-xl text-rx-text">Map results</Text>
-                <Text className="mt-1 font-jakarta text-xs text-rx-muted">
-                  {selectedListing
-                    ? `${mapSheetListings.length} listing${mapSheetListings.length === 1 ? "" : "s"} in ${selectedListing.location}`
-                    : "No nearby listings"}
-                </Text>
-              </View>
-              {selectedListing ? (
+            {selectedListing ? (
+              <View className="mb-4 flex-row justify-end">
                 <ScaleButton
                   onPress={() =>
                     router.push({
@@ -312,16 +333,17 @@ export default function ExploreScreen() {
                   }
                   className="rounded-full bg-white px-4 py-2"
                 >
-                  <Text className="font-jakarta text-sm text-rx-accent">View area</Text>
+                  <Text className="font-jakarta text-sm text-rx-accent">Open area results</Text>
                 </ScaleButton>
-              ) : null}
-            </View>
+              </View>
+            ) : null}
 
             <FlatList
               key="map-results-grid"
               data={mapSheetListings}
               keyExtractor={(item) => item.listingId}
               numColumns={2}
+              nestedScrollEnabled
               columnWrapperStyle={{ gap: 12 }}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 120 }}

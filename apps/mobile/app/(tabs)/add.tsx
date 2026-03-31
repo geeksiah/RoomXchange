@@ -2,10 +2,11 @@ import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AddListingWizard } from "../../src/components/add-listing-wizard";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
+import { SessionLoadingCard } from "../../src/components/session-loading-card";
 import { useSession } from "../../src/session-provider";
 
 export default function AddScreen() {
-  const { session } = useSession();
+  const { session, hydrated } = useSession();
 
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
@@ -16,7 +17,9 @@ export default function AddScreen() {
             Publish a real marketplace listing with images, location, pricing, and amenities.
           </Text>
         </View>
-        {session ? (
+        {!hydrated ? (
+          <SessionLoadingCard />
+        ) : session ? (
           <AddListingWizard />
         ) : (
           <AuthRedirectCard

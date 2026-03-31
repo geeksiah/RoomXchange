@@ -9,12 +9,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { Avatar } from "../../src/components/avatar";
 import { ScaleButton } from "../../src/components/scale-button";
+import { SessionLoadingCard } from "../../src/components/session-loading-card";
 import { useSession } from "../../src/session-provider";
 import { useNotificationStore } from "../../src/stores/notification-store";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { session, api, refreshProfile, logout } = useSession();
+  const { session, api, refreshProfile, logout, hydrated } = useSession();
   const queryClient = useQueryClient();
   const reminders = useNotificationStore((state) => state.reminders);
   const [name, setName] = useState(session?.user.name ?? "");
@@ -91,6 +92,16 @@ export default function ProfileScreen() {
     });
     setAvatar(upload.fileUrl);
   };
+
+  if (!hydrated) {
+    return (
+      <SafeAreaView className="flex-1 bg-rx-background">
+        <View className="flex-1 p-4">
+          <SessionLoadingCard description="We are restoring your profile and marketplace data." />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!session) {
     return (

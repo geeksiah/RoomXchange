@@ -18,6 +18,7 @@ import { BackIconButton } from "../../src/components/back-icon-button";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { openPhoneCall, openWhatsApp } from "../../src/lib/contact-actions";
 import { ScaleButton } from "../../src/components/scale-button";
+import { SessionLoadingCard } from "../../src/components/session-loading-card";
 import { useSession } from "../../src/session-provider";
 import { useChatStore } from "../../src/stores/chat-store";
 
@@ -25,7 +26,7 @@ export default function ConversationScreen() {
   const params = useLocalSearchParams<{ conversationId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { api, session } = useSession();
+  const { api, session, hydrated } = useSession();
   const [body, setBody] = useState("");
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const setActiveConversationId = useChatStore((state) => state.setActiveConversationId);
@@ -114,6 +115,16 @@ export default function ConversationScreen() {
       }
     } as never);
   };
+
+  if (!hydrated) {
+    return (
+      <SafeAreaView className="flex-1 bg-rx-background">
+        <View className="flex-1 p-4">
+          <SessionLoadingCard description="We are restoring your conversation and account details." />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!session) {
     return (

@@ -6,18 +6,29 @@ import { AddListingWizard } from "../../../src/components/add-listing-wizard";
 import { AuthRedirectCard } from "../../../src/components/auth-redirect-card";
 import { BackIconButton } from "../../../src/components/back-icon-button";
 import { ScreenHeader } from "../../../src/components/screen-header";
+import { SessionLoadingCard } from "../../../src/components/session-loading-card";
 import { useSession } from "../../../src/session-provider";
 
 export default function EditListingScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { session, api } = useSession();
+  const { session, api, hydrated } = useSession();
 
   const listingQuery = useQuery({
     queryKey: ["listing", params.id],
     queryFn: () => api.getListing(params.id),
     enabled: Boolean(session && params.id)
   });
+
+  if (!hydrated) {
+    return (
+      <SafeAreaView className="flex-1 bg-rx-background">
+        <View className="flex-1 p-4">
+          <SessionLoadingCard description="We are restoring your account before opening the listing editor." />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!session) {
     return (

@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { startTransition, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
 import {
@@ -173,9 +173,7 @@ export function AuthPanel({ title, mode = "login" }: { title?: string; mode?: Au
       setPending(true);
       setError(null);
       const nextSession = await api.login(values);
-      startTransition(() => {
-        void setSession(nextSession);
-      });
+      await setSession(nextSession);
     } catch (loginError) {
       logDeveloperError("auth.login", loginError);
       setError(getFriendlyLoginError(loginError));
@@ -222,9 +220,7 @@ export function AuthPanel({ title, mode = "login" }: { title?: string; mode?: Au
         identifier: challenge.identifier,
         password: challenge.password
       });
-      startTransition(() => {
-        void setSession(nextSession);
-      });
+      await setSession(nextSession);
     } catch (verifyError) {
       logDeveloperError("auth.signup.verify", verifyError);
       setError(getFriendlyOtpVerifyError(verifyError));

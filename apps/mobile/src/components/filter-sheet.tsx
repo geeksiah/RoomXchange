@@ -102,15 +102,17 @@ export function FilterSheet({ visible, onClose }: { visible: boolean; onClose: (
           <BlurView intensity={34} tint="light" style={{ flex: 1 }} />
           <View className="absolute inset-0 bg-white/24" />
         </View>
-        <Pressable onPress={closeSheetFromBackdrop} className="absolute inset-0 bg-transparent" />
+        <Pressable onPress={closeSheetFromBackdrop} className="flex-1 bg-transparent" />
         <Animated.View
           style={{
+            maxHeight: Math.min(height * 0.88, 760),
             transform: [{ translateY }],
             shadowColor: "#111111",
             shadowOpacity: 0.14,
             shadowRadius: 24,
             shadowOffset: { width: 0, height: -8 },
-            elevation: 20
+            elevation: 20,
+            zIndex: 2
           }}
           className="rounded-t-[32px] bg-white px-5 pb-9 pt-4"
         >

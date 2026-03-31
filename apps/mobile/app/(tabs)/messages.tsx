@@ -8,13 +8,14 @@ import { ConversationItem } from "../../src/components/conversation-item";
 import { EmptyStateCard } from "../../src/components/empty-state-card";
 import { ScaleButton } from "../../src/components/scale-button";
 import { ScreenHeader } from "../../src/components/screen-header";
+import { SessionLoadingCard } from "../../src/components/session-loading-card";
 import { useSession } from "../../src/session-provider";
 import { useChatStore } from "../../src/stores/chat-store";
 
 export default function MessagesScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { session, api } = useSession();
+  const { session, api, hydrated } = useSession();
   const unreadCounts = useChatStore((state) => state.unreadCounts);
   const syncUnreadCounts = useChatStore((state) => state.syncUnreadCounts);
   const clearAllUnread = useChatStore((state) => state.clearAllUnread);
@@ -61,6 +62,16 @@ export default function MessagesScreen() {
       current.includes(conversationId) ? current.filter((item) => item !== conversationId) : [...current, conversationId]
     );
   };
+
+  if (!hydrated) {
+    return (
+      <SafeAreaView className="flex-1 bg-rx-background">
+        <View className="flex-1 p-4">
+          <SessionLoadingCard description="We are restoring your inbox and account details." />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!session) {
     return (
