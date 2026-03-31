@@ -56,7 +56,7 @@ const accountDeletionUrl = `${appWebUrl}/delete-account`;
 const config: ExpoConfig = {
   name: "RoomXchange",
   slug: "roomxchange",
-  owner: "facefindr-app",
+  owner: "nsiahgh6",
   scheme: "roomxchange",
   version: "1.0.0",
   orientation: "portrait",
@@ -101,7 +101,7 @@ const config: ExpoConfig = {
   plugins: ["expo-router", "expo-notifications", "expo-secure-store", "./plugins/with-monorepo-android-bundle"],
   extra: {
     eas: {
-      projectId: "77748195-a71f-4a62-90f6-0cd7ecde03ef"
+      projectId: "9e11f47c-5b61-4f3b-a09d-7c13ce5f0fda"
     },
     apiUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_API_URL ?? "",
     webUrl: appWebUrl,
