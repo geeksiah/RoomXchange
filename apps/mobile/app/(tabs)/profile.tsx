@@ -172,7 +172,7 @@ export default function ProfileScreen() {
               <ProfileMenuRow
                 icon="information-circle-outline"
                 title="About app"
-                description="Version, device info, and support options"
+                description="Version, privacy, delete-account, and support options"
                 onPress={() => router.push({ pathname: "/profile/about" } as never)}
               />
             </View>

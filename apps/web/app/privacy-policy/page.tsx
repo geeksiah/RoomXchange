@@ -53,12 +53,23 @@ const sections = [
     ]
   },
   {
+    title: "How we protect information",
+    items: [
+      "We use reasonable administrative, technical, and organizational safeguards designed to protect personal information in transit and at rest.",
+      "No method of transmission or storage is completely secure, so we cannot guarantee absolute security."
+    ]
+  },
+  {
     title: "Your choices",
     items: [
       "You can update your profile details and listing content from the app or web dashboard.",
       "You can disable push notifications in your device settings at any time.",
-      "You can contact us to request account deletion or ask privacy-related questions."
+      "You can use the RoomXchange account deletion page to request deletion or contact us directly with privacy-related questions."
     ]
+  },
+  {
+    title: "Policy changes",
+    items: ["We may update this Privacy Policy from time to time. When we do, we will post the updated version on this page and revise the last updated date."]
   }
 ] as const;
 
@@ -100,7 +111,11 @@ export default function PrivacyPolicyPage() {
             <a href="mailto:support@roomxchange.com" style={{ color: "var(--rx-accent)", fontWeight: 700 }}>
               support@roomxchange.com
             </a>
-            .
+            . You can also use the{" "}
+            <a href="/delete-account" style={{ color: "var(--rx-accent)", fontWeight: 700 }}>
+              account deletion page
+            </a>{" "}
+            to submit a deletion request.
           </p>
         </section>
 

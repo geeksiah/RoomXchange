@@ -50,6 +50,8 @@ const appWebUrl =
 const configuredSupportUrl = process.env.EXPO_PUBLIC_ROOMXCHANGE_SUPPORT_URL?.trim();
 const supportUrl =
   configuredSupportUrl && /^https?:\/\//i.test(configuredSupportUrl) ? configuredSupportUrl : `${appWebUrl}#support`;
+const privacyPolicyUrl = `${appWebUrl}/privacy-policy`;
+const accountDeletionUrl = `${appWebUrl}/delete-account`;
 
 const config: ExpoConfig = {
   name: "RoomXchange",
@@ -106,6 +108,8 @@ const config: ExpoConfig = {
     socketUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_SOCKET_URL ?? "",
     pushProjectId: process.env.EXPO_PUBLIC_ROOMXCHANGE_PUSH_PROJECT_ID ?? "",
     supportUrl,
+    privacyPolicyUrl,
+    accountDeletionUrl,
     maps: {
       androidConfigured: Boolean(androidGoogleMapsApiKey),
       iosConfigured: Boolean(iosGoogleMapsApiKey)
