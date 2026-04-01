@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { FlatList, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CounterBadge } from "../../src/components/counter-badge";
 import { Avatar } from "../../src/components/avatar";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { EmptyStateCard } from "../../src/components/empty-state-card";
@@ -45,9 +46,7 @@ export default function HomeScreen() {
                 <View>
                   <Ionicons name="notifications-outline" size={22} color="#111111" />
                   {unreadNotifications > 0 ? (
-                    <View className="absolute -right-2 -top-2 min-w-[18px] rounded-full bg-rx-accent px-1.5 py-0.5">
-                      <Text className="text-center font-jakarta-bold text-[10px] text-white">{unreadNotifications > 9 ? "9+" : unreadNotifications}</Text>
-                    </View>
+                    <CounterBadge value={unreadNotifications > 9 ? "9+" : unreadNotifications} className="absolute -right-2 -top-2" />
                   ) : null}
                 </View>
               </ScaleButton>
@@ -70,9 +69,7 @@ export default function HomeScreen() {
               <View>
                 <Ionicons name="options-outline" size={22} color="#111111" />
                 {activeFilterCount > 0 ? (
-                  <View className="absolute -right-2 -top-2 min-w-[18px] rounded-full bg-rx-accent px-1.5 py-0.5">
-                    <Text className="text-center font-jakarta-bold text-[10px] text-white">{activeFilterCount}</Text>
-                  </View>
+                  <CounterBadge value={activeFilterCount > 9 ? "9+" : activeFilterCount} className="absolute -right-2 -top-2" />
                 ) : null}
               </View>
             </ScaleButton>

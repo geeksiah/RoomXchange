@@ -5,7 +5,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { formatListingSubtypeLabel } from "@roomxchange/shared/src/mobile";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { BackIconButton } from "../../src/components/back-icon-button";
-import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { PriceRangeSlider } from "../../src/components/price-range-slider";
 import { ScreenHeader } from "../../src/components/screen-header";
 import { ScaleButton } from "../../src/components/scale-button";
@@ -80,11 +79,13 @@ export default function AlertsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
-      <DismissKeyboardView className="flex-1">
+      <View className="flex-1">
         <ScreenHeader title="Saved alerts" left={<BackIconButton fallbackPath="/profile" />} />
         <ScrollView
+          className="flex-1"
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 176 }}
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 176 }}
           showsVerticalScrollIndicator={false}
         >
           <View className="px-4">
@@ -117,29 +118,33 @@ export default function AlertsScreen() {
 
                 <View>
                   <Text className="mb-3 font-jakarta-bold text-sm text-rx-text">Listing type</Text>
-                  <View className="flex-row gap-2">
-                    {[
-                      { key: "all", label: "All" },
-                      { key: "room", label: "Rooms" },
-                      { key: "apartment", label: "Apartments" }
-                    ].map((item) => {
-                      const active = propertyType === item.key;
-                      return (
-                        <ScaleButton
-                          key={item.key}
-                          onPress={() => setPropertyType(item.key as "all" | "room" | "apartment")}
-                          className={`flex-1 rounded-full px-4 py-3 ${active ? "bg-rx-text" : "border border-rx-border bg-rx-background"}`}
-                        >
-                          <Text className={`text-center font-jakarta-bold text-sm ${active ? "text-white" : "text-rx-text"}`}>{item.label}</Text>
-                        </ScaleButton>
-                      );
-                    })}
-                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never">
+                    <View className="flex-row gap-2 pr-4">
+                      {[
+                        { key: "all", label: "All" },
+                        { key: "room", label: "Rooms" },
+                        { key: "apartment", label: "Apartments" }
+                      ].map((item) => {
+                        const active = propertyType === item.key;
+                        return (
+                          <ScaleButton
+                            key={item.key}
+                            onPress={() => setPropertyType(item.key as "all" | "room" | "apartment")}
+                            className={`rounded-full px-4 py-3 ${active ? "bg-rx-text" : "border border-rx-border bg-rx-background"}`}
+                          >
+                            <Text className={`font-jakarta-bold text-sm ${active ? "text-white" : "text-rx-text"}`} numberOfLines={1}>
+                              {item.label}
+                            </Text>
+                          </ScaleButton>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
                 </View>
 
                 <View>
                   <Text className="mb-3 font-jakarta-bold text-sm text-rx-text">Room type</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never">
                     <View className="flex-row gap-2 pr-4">
                     {["studio", "single_room_sc", "one_bedroom", "two_bedroom_plus"].map((item) => {
                       const active = listingSubtypes.includes(item as typeof listingSubtypes[number]);
@@ -149,7 +154,7 @@ export default function AlertsScreen() {
                           onPress={() => toggleSubtype(item as typeof listingSubtypes[number])}
                           className={`rounded-full px-4 py-3 ${active ? "bg-rx-text" : "border border-rx-border bg-rx-background"}`}
                         >
-                          <Text className={`font-jakarta-bold text-sm ${active ? "text-white" : "text-rx-text"}`}>
+                          <Text className={`font-jakarta-bold text-sm ${active ? "text-white" : "text-rx-text"}`} numberOfLines={1}>
                             {formatListingSubtypeLabel(item)}
                           </Text>
                         </ScaleButton>
@@ -294,7 +299,7 @@ export default function AlertsScreen() {
             </View>
           </View>
         </ScrollView>
-      </DismissKeyboardView>
+      </View>
     </SafeAreaView>
   );
 }

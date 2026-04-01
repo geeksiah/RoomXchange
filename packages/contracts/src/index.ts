@@ -141,7 +141,7 @@ export const listingInputSchema = z.object({
   images: z.array(z.string().url()).min(1).max(10),
   previewImage: z.string().url(),
   vrUrl: optionalUrlSchema,
-  description: z.string().trim().min(40).max(3000),
+  description: z.string().trim().min(20).max(3000),
   amenities: z.array(amenitySchema).max(12).default([]),
   mapboxPlaceId: optionalStringSchema.pipe(z.string().trim().min(3).max(160).optional()),
   status: z.enum(listingStatuses).default("published")

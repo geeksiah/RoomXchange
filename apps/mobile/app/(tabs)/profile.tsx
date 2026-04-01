@@ -10,6 +10,7 @@ import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { Avatar } from "../../src/components/avatar";
 import { ScaleButton } from "../../src/components/scale-button";
 import { SessionLoadingCard } from "../../src/components/session-loading-card";
+import { uploadPresignedFile } from "../../src/lib/presigned-upload";
 import { useSession } from "../../src/session-provider";
 import { useNotificationStore } from "../../src/stores/notification-store";
 
@@ -84,11 +85,10 @@ export default function ProfileScreen() {
       fileName: asset.fileName ?? `roomxchange-profile-${Date.now()}.jpg`,
       contentType: "image/jpeg"
     });
-    const blob = await fetch(compressed.uri).then((response) => response.blob());
-    await fetch(upload.uploadUrl, {
-      method: "PUT",
-      headers: upload.headers,
-      body: blob
+    await uploadPresignedFile({
+      uri: compressed.uri,
+      uploadUrl: upload.uploadUrl,
+      headers: upload.headers
     });
     setAvatar(upload.fileUrl);
   };

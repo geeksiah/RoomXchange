@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, FlatList, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { Alert, FlatList, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { formatAmenityLabel, formatMonthlyPrice } from "@roomxchange/shared/src/mobile";
@@ -23,6 +23,7 @@ export default function ListingDetailScreen() {
   const insets = useSafeAreaInsets();
   const galleryRef = useRef<FlatList<string>>(null);
   const heroGalleryRef = useRef<ScrollView>(null);
+  const bottomActionInset = Math.max(insets.bottom, Platform.OS === "android" ? 24 : 12);
 
   const listingQuery = useQuery({
     queryKey: ["listing", params.id],
@@ -125,7 +126,7 @@ export default function ListingDetailScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 180, paddingTop: insets.top + 72 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 180 + bottomActionInset, paddingTop: insets.top + 72 }}>
         <ScrollView
           ref={heroGalleryRef}
           horizontal
@@ -192,8 +193,9 @@ export default function ListingDetailScreen() {
       </ScrollView>
 
       <View
-        className="absolute inset-x-0 bottom-0 border-t border-rx-border bg-white px-4 pb-8 pt-4"
+        className="absolute inset-x-0 bottom-0 border-t border-rx-border bg-white px-4 pt-4"
         style={{
+          paddingBottom: bottomActionInset + 10,
           shadowColor: "#111111",
           shadowOpacity: 0.06,
           shadowRadius: 16,

@@ -62,13 +62,15 @@ export function getNativeMapProvider(): Provider | undefined {
 
 export function isNativeMapAvailable() {
   const { androidConfigured } = getExpoMapConfig();
+  const defaultManagerAvailable = hasDefaultMapManager();
+  const googleManagerAvailable = hasGoogleMapManager();
 
   if (Platform.OS === "android") {
-    return Boolean(androidConfigured && hasDefaultMapManager());
+    return androidConfigured && (defaultManagerAvailable || googleManagerAvailable);
   }
 
   if (Platform.OS === "ios") {
-    return Boolean(getNativeMapProvider() ? hasGoogleMapManager() : hasDefaultMapManager());
+    return Boolean(getNativeMapProvider() ? googleManagerAvailable : defaultManagerAvailable);
   }
 
   return false;
@@ -76,7 +78,7 @@ export function isNativeMapAvailable() {
 
 export function getMapAvailabilityHint() {
   if (Platform.OS === "android") {
-    return "Rebuild the Android app or dev client after syncing EXPO_PUBLIC_GOOGLE_MAPS_API_KEY so the native Google Maps view is included.";
+    return "This Android build could not start the native map view. Install the latest synced build, or use the listings view for now.";
   }
 
   if (Platform.OS === "ios") {

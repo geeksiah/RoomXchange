@@ -135,21 +135,25 @@ export default function ProfileListingsScreen() {
               className="mt-4 rounded-2xl bg-rx-background px-4 py-4 font-jakarta text-base leading-6 text-rx-text"
             />
 
-            <View className="mt-3 flex-row gap-2">
-              {[
-                { key: "all", label: "All" },
-                { key: "published", label: "Published" },
-                { key: "archived", label: "Unlisted" }
-              ].map((item) => (
-                <ScaleButton
-                  key={item.key}
-                  onPress={() => setListingStatus(item.key as "all" | "published" | "archived")}
-                  className={`flex-1 rounded-full px-4 py-3 ${listingStatus === item.key ? "bg-rx-text" : "bg-rx-background"}`}
-                >
-                  <Text className={`text-center font-jakarta-bold text-sm ${listingStatus === item.key ? "text-white" : "text-rx-text"}`}>{item.label}</Text>
-                </ScaleButton>
-              ))}
-            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never" className="mt-3">
+              <View className="flex-row gap-2 pr-4">
+                {[
+                  { key: "all", label: "All" },
+                  { key: "published", label: "Published" },
+                  { key: "archived", label: "Unlisted" }
+                ].map((item) => (
+                  <ScaleButton
+                    key={item.key}
+                    onPress={() => setListingStatus(item.key as "all" | "published" | "archived")}
+                    className={`rounded-full px-4 py-3 ${listingStatus === item.key ? "bg-rx-text" : "bg-rx-background"}`}
+                  >
+                    <Text className={`font-jakarta-bold text-sm ${listingStatus === item.key ? "text-white" : "text-rx-text"}`} numberOfLines={1}>
+                      {item.label}
+                    </Text>
+                  </ScaleButton>
+                ))}
+              </View>
+            </ScrollView>
 
             <View className="mt-4 gap-3">
               {filteredListings.map((listing) => (

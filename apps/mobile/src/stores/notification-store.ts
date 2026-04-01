@@ -105,6 +105,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     pushEnabled: true,
     messageNotificationsEnabled: true,
     listingMatchNotificationsEnabled: true,
+    donationProvider: "Paystack",
+    donationUrl: null,
+    donationPresetAmounts: [50, 100, 200, 500, 1000],
     updatedAt: new Date().toISOString()
   },
   unreadCount: 0,

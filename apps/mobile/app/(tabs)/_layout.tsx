@@ -1,10 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Pressable, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useChatStore } from "../../src/stores/chat-store";
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
   const totalUnreadCount = useChatStore((state) => state.totalUnreadCount);
+  const tabBarBottomPadding = Math.max(insets.bottom, Platform.OS === "android" ? 24 : 14);
+  const tabBarHeight = 68 + tabBarBottomPadding;
 
   return (
     <Tabs
@@ -17,9 +21,9 @@ export default function TabsLayout() {
           fontSize: 11
         },
         tabBarStyle: {
-          height: 96,
+          height: tabBarHeight,
           paddingTop: 10,
-          paddingBottom: 22,
+          paddingBottom: tabBarBottomPadding,
           backgroundColor: "#FFFFFF",
           borderTopColor: "#EAEAEA",
           shadowColor: "#111111",
@@ -38,7 +42,7 @@ export default function TabsLayout() {
           title: "Add",
           tabBarLabel: () => null,
           tabBarIcon: () => null,
-          tabBarButton: (props) => <AddTabButton {...props} />
+          tabBarButton: (props) => <AddTabButton {...props} bottomInset={tabBarBottomPadding} />
         }}
       />
       <Tabs.Screen
@@ -47,7 +51,17 @@ export default function TabsLayout() {
           title: "Messages",
           tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-ellipses-outline" color={color} size={size} />,
           tabBarBadge: totalUnreadCount > 0 ? (totalUnreadCount > 9 ? "9+" : String(totalUnreadCount)) : undefined,
-          tabBarBadgeStyle: { backgroundColor: "#FF385C", color: "#FFFFFF" }
+          tabBarBadgeStyle: {
+            backgroundColor: "#FF385C",
+            color: "#FFFFFF",
+            minWidth: 20,
+            height: 20,
+            borderRadius: 10,
+            paddingHorizontal: 0,
+            fontSize: 10,
+            lineHeight: 12,
+            fontFamily: "PlusJakartaSans_700Bold"
+          }
         }}
       />
       <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} /> }} />
@@ -55,7 +69,7 @@ export default function TabsLayout() {
   );
 }
 
-function AddTabButton({ accessibilityState, onPress, onLongPress }: any) {
+function AddTabButton({ accessibilityState, onPress, onLongPress, bottomInset }: any & { bottomInset: number }) {
   const focused = Boolean(accessibilityState?.selected);
 
   return (
@@ -65,7 +79,7 @@ function AddTabButton({ accessibilityState, onPress, onLongPress }: any) {
       onPress={() => onPress?.()}
       onLongPress={() => onLongPress?.()}
       className="items-center justify-end"
-      style={{ width: 88, marginTop: -26 }}
+      style={{ width: 88, marginTop: -24, paddingBottom: Math.max(bottomInset - 14, 0) }}
     >
       <View
         className="h-[68px] w-[68px] items-center justify-center rounded-full bg-rx-accent"

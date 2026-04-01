@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Text, View } from "react-native";
+import { Platform, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export function ScreenHeader({
@@ -17,7 +17,7 @@ export function ScreenHeader({
     <View
       className="mb-4 bg-white px-4 pb-5"
       style={{
-        paddingTop: insets.top + 12,
+        paddingTop: Platform.OS === "ios" ? insets.top + 12 : 12,
         shadowColor: "#111111",
         shadowOpacity: 0.06,
         shadowRadius: 16,

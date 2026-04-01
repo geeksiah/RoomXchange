@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FlatList, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BackIconButton } from "../../../src/components/back-icon-button";
+import { CounterBadge } from "../../../src/components/counter-badge";
 import { DismissKeyboardView } from "../../../src/components/dismiss-keyboard-view";
 import { FilterSheet } from "../../../src/components/filter-sheet";
 import { PropertyCard } from "../../../src/components/property-card";
@@ -58,9 +59,7 @@ export default function LocationResultsScreen() {
               <View>
                 <Ionicons name="options-outline" size={22} color="#111111" />
                 {activeFilterCount > 0 ? (
-                  <View className="absolute -right-2 -top-2 min-w-[18px] rounded-full bg-rx-accent px-1.5 py-0.5">
-                    <Text className="text-center font-jakarta-bold text-[10px] text-white">{activeFilterCount}</Text>
-                  </View>
+                  <CounterBadge value={activeFilterCount > 9 ? "9+" : activeFilterCount} className="absolute -right-2 -top-2" />
                 ) : null}
               </View>
             </ScaleButton>

@@ -22,6 +22,7 @@ import { DismissKeyboardView } from "./dismiss-keyboard-view";
 import { EmptyStateCard } from "./empty-state-card";
 import { ScaleButton } from "./scale-button";
 import { getMapAvailabilityHint, getNativeMapProvider, isNativeMapAvailable } from "../lib/maps";
+import { uploadPresignedFile } from "../lib/presigned-upload";
 import { useSession } from "../session-provider";
 
 type Suggestion = {
@@ -276,11 +277,10 @@ export function AddListingWizard({ mode = "create", listingId, initialValues, on
           fileName,
           contentType
         });
-        const blob = await fetch(compressed.uri).then((response) => response.blob());
-        await fetch(upload.uploadUrl, {
-          method: "PUT",
-          headers: upload.headers,
-          body: blob
+        await uploadPresignedFile({
+          uri: compressed.uri,
+          uploadUrl: upload.uploadUrl,
+          headers: upload.headers
         });
         uploaded.push(upload.fileUrl);
       }

@@ -8,6 +8,7 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import MapView, { Marker } from "react-native-maps";
 import { formatMonthlyPrice, type ListingSummary } from "@roomxchange/shared/src/mobile";
+import { CounterBadge } from "../../src/components/counter-badge";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
 import { EmptyStateCard } from "../../src/components/empty-state-card";
 import { FilterSheet } from "../../src/components/filter-sheet";
@@ -17,6 +18,10 @@ import { getMapAvailabilityHint, getNativeMapProvider, isNativeMapAvailable } fr
 import { useSession } from "../../src/session-provider";
 import { useNotificationStore } from "../../src/stores/notification-store";
 import { useSearchStore } from "../../src/stores/search-store";
+
+function hasValidCoordinates(listing: ListingSummary) {
+  return Number.isFinite(listing.lat) && Number.isFinite(listing.lng);
+}
 
 export default function ExploreScreen() {
   const router = useRouter();
@@ -86,24 +91,25 @@ export default function ExploreScreen() {
   });
 
   const listings = feedQuery.data?.items ?? [];
+  const mapListings = useMemo(() => listings.filter(hasValidCoordinates), [listings]);
   const selectedListing = useMemo(
-    () => listings.find((item) => item.listingId === selectedListingId) ?? listings[0] ?? null,
-    [listings, selectedListingId]
+    () => mapListings.find((item) => item.listingId === selectedListingId) ?? mapListings[0] ?? null,
+    [mapListings, selectedListingId]
   );
   const mapSheetListings = useMemo(() => {
     if (!selectedListing) {
-      return listings;
+      return mapListings;
     }
-    return listings.filter((item) => item.location === selectedListing.location);
-  }, [listings, selectedListing]);
+    return mapListings.filter((item) => item.location === selectedListing.location);
+  }, [mapListings, selectedListing]);
   const nativeMapAvailable = useMemo(() => isNativeMapAvailable(), []);
   const mapProvider = useMemo(() => getNativeMapProvider(), []);
 
   useEffect(() => {
-    if (!selectedListingId && listings[0]) {
-      setSelectedListingId(listings[0].listingId);
+    if (!selectedListingId && mapListings[0]) {
+      setSelectedListingId(mapListings[0].listingId);
     }
-  }, [listings, selectedListingId]);
+  }, [mapListings, selectedListingId]);
 
   useEffect(() => {
     if (selectedListing) {
@@ -128,9 +134,7 @@ export default function ExploreScreen() {
             <View>
               <Ionicons name="notifications-outline" size={22} color="#111111" />
               {unreadNotifications > 0 ? (
-                <View className="absolute -right-2 -top-2 min-w-[18px] rounded-full bg-rx-accent px-1.5 py-0.5">
-                  <Text className="text-center font-jakarta-bold text-[10px] text-white">{unreadNotifications > 9 ? "9+" : unreadNotifications}</Text>
-                </View>
+                <CounterBadge value={unreadNotifications > 9 ? "9+" : unreadNotifications} className="absolute -right-2 -top-2" />
               ) : null}
             </View>
           </ScaleButton>
@@ -168,9 +172,7 @@ export default function ExploreScreen() {
               <View>
                 <Ionicons name="options-outline" size={22} color="#111111" />
                 {activeFilterCount > 0 ? (
-                  <View className="absolute -right-2 -top-2 min-w-[18px] rounded-full bg-rx-accent px-1.5 py-0.5">
-                    <Text className="text-center font-jakarta-bold text-[10px] text-white">{activeFilterCount}</Text>
-                  </View>
+                  <CounterBadge value={activeFilterCount > 9 ? "9+" : activeFilterCount} className="absolute -right-2 -top-2" />
                 ) : null}
               </View>
             </ScaleButton>
@@ -223,6 +225,20 @@ export default function ExploreScreen() {
             onActionPress={() => setMode("browse")}
           />
         </View>
+      ) : !mapListings.length ? (
+        <View className="flex-1 px-4 pb-10 pt-2">
+          <EmptyStateCard
+            icon="locate-outline"
+            title={feedQuery.isLoading ? "Loading map listings" : "No mapped listings yet"}
+            description={
+              feedQuery.isLoading
+                ? "We are preparing map-ready listings now."
+                : "Switch back to the list view or broaden your search to see more results."
+            }
+            actionLabel={feedQuery.isLoading ? undefined : "Show listings"}
+            onActionPress={feedQuery.isLoading ? undefined : () => setMode("browse")}
+          />
+        </View>
       ) : (
         <View className="flex-1">
           <MapView
@@ -236,7 +252,7 @@ export default function ExploreScreen() {
               longitudeDelta: 0.18
             }}
           >
-            {listings.map((listing) => (
+            {mapListings.map((listing) => (
               <Marker
                 key={listing.listingId}
                 coordinate={{ latitude: listing.lat, longitude: listing.lng }}
@@ -273,9 +289,7 @@ export default function ExploreScreen() {
               <View>
                 <Ionicons name="options-outline" size={22} color="#111111" />
                 {activeFilterCount > 0 ? (
-                  <View className="absolute -right-2 -top-2 min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rx-accent px-1">
-                    <Text className="text-center font-jakarta-bold text-[10px] text-white">{activeFilterCount}</Text>
-                  </View>
+                  <CounterBadge value={activeFilterCount > 9 ? "9+" : activeFilterCount} className="absolute -right-2 -top-2" />
                 ) : null}
               </View>
             </ScaleButton>
