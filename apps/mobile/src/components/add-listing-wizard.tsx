@@ -7,21 +7,22 @@ import { Image } from "expo-image";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import MapView, { Marker, type MapPressEvent } from "react-native-maps";
 import { listingInputSchema, suggestedAmenities, type ListingInput } from "@roomxchange/contracts";
 import {
-  buildMapboxSearchUrl,
   formatAmenityLabel,
   formatListingSubtypeLabel,
-  formatMonthlyPrice,
-  roomXchangeConfig
+  formatMonthlyPrice
 } from "@roomxchange/shared/src/mobile";
 import { searchGhanaLocations } from "../ghana-locations";
 import { DismissKeyboardView } from "./dismiss-keyboard-view";
 import { EmptyStateCard } from "./empty-state-card";
+import { LoadingLabel } from "./loading-label";
+import { NativeMapBoundary } from "./native-map-boundary";
 import { ScaleButton } from "./scale-button";
-import { getMapAvailabilityHint, getNativeMapProvider, isNativeMapAvailable } from "../lib/maps";
+import { getMapAvailabilityHint, getNativeMapProvider, isNativeMapConfigured, logNativeMapDiagnostics } from "../lib/maps";
+import { buildRuntimeMapboxSearchUrl } from "../lib/runtime-config";
 import { uploadPresignedFile } from "../lib/presigned-upload";
 import { useSession } from "../session-provider";
 
@@ -91,6 +92,7 @@ export function AddListingWizard({ mode = "create", listingId, initialValues, on
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [amenityInput, setAmenityInput] = useState("");
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [mapRenderFailed, setMapRenderFailed] = useState(false);
 
   const form = useForm<ListingInput>({
     resolver: zodResolver(listingInputSchema),
@@ -155,12 +157,13 @@ export function AddListingWizard({ mode = "create", listingId, initialValues, on
     }
 
     const timer = setTimeout(() => {
-      if (!roomXchangeConfig.mapboxToken) {
+      const searchUrl = buildRuntimeMapboxSearchUrl(query);
+      if (!searchUrl) {
         applyResolvedSuggestions([]);
         return;
       }
 
-      fetch(buildMapboxSearchUrl(query), { signal: controller.signal })
+      fetch(searchUrl, { signal: controller.signal })
         .then((response) => response.json())
         .then((payload) => {
           const remoteMatches = (payload.features ?? []).map((feature: any) => ({
@@ -189,8 +192,20 @@ export function AddListingWizard({ mode = "create", listingId, initialValues, on
     }),
     [lat, lng]
   );
-  const nativeMapAvailable = useMemo(() => isNativeMapAvailable(), []);
+  const nativeMapConfigured = useMemo(() => isNativeMapConfigured(), []);
   const mapProvider = useMemo(() => getNativeMapProvider(), []);
+
+  useEffect(() => {
+    if (step === 2) {
+      logNativeMapDiagnostics("add-listing.map_attempt");
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (step === 2) {
+      setMapRenderFailed(false);
+    }
+  }, [currentRegion.latitude, currentRegion.longitude, step]);
 
   const addAmenity = (value: string) => {
     const normalized = value.trim();
@@ -471,10 +486,16 @@ export function AddListingWizard({ mode = "create", listingId, initialValues, on
             <Text className="font-jakarta-bold text-2xl text-rx-text">Upload images</Text>
             <Text className="mt-2 font-jakarta text-sm leading-6 text-rx-muted">
               Add up to 10 JPG or PNG photos, 8MB each. Choose the cover photo that should represent the listing first.
-            </Text>
-            <ScaleButton onPress={() => void pickImages()} className="mt-4 rounded-full border border-rx-border bg-rx-background py-4">
-              <Text className="text-center font-jakarta-bold text-base text-rx-text">{busy ? "Uploading..." : "Select photos"}</Text>
-            </ScaleButton>
+              </Text>
+              <ScaleButton onPress={() => void pickImages()} className="mt-4 rounded-full border border-rx-border bg-rx-background py-4">
+                <LoadingLabel
+                  loading={busy}
+                  label="Select photos"
+                  loadingLabel="Uploading photos"
+                  textClassName="text-center font-jakarta-bold text-base text-rx-text"
+                  spinnerColor="#111111"
+                />
+              </ScaleButton>
             <View className="mt-4">
               <PhotoGrid images={images ?? []} onMakeCover={makeCover} onRemove={removeImage} />
             </View>
@@ -516,16 +537,33 @@ export function AddListingWizard({ mode = "create", listingId, initialValues, on
             </Pressable>
           ))}
           <View className="mt-4 overflow-hidden rounded-3xl">
-            {nativeMapAvailable ? (
-              <MapView
-                style={{ width: "100%", height: 260 }}
-                provider={mapProvider}
-                initialRegion={currentRegion}
-                region={currentRegion}
-                onPress={onMapPress}
+            {nativeMapConfigured && !mapRenderFailed ? (
+              <NativeMapBoundary
+                resetKey={`${currentRegion.latitude}:${currentRegion.longitude}`}
+                onError={() => setMapRenderFailed(true)}
+                onReset={() => setMapRenderFailed(false)}
+                fallback={
+                  <View className="bg-rx-background p-4">
+                    <EmptyStateCard
+                      icon="map-outline"
+                      title="Map pinning is unavailable in this build"
+                      description={getMapAvailabilityHint()}
+                    />
+                  </View>
+                }
               >
-                <Marker coordinate={{ latitude: currentRegion.latitude, longitude: currentRegion.longitude }} />
-              </MapView>
+                <MapView
+                  style={{ width: "100%", height: 260 }}
+                  provider={mapProvider}
+                  googleRenderer={Platform.OS === "android" ? "LEGACY" : undefined}
+                  initialRegion={currentRegion}
+                  region={currentRegion}
+                  onMapReady={() => setMapRenderFailed(false)}
+                  onPress={onMapPress}
+                >
+                  <Marker coordinate={{ latitude: currentRegion.latitude, longitude: currentRegion.longitude }} />
+                </MapView>
+              </NativeMapBoundary>
             ) : (
               <View className="bg-rx-background p-4">
                 <EmptyStateCard
@@ -768,13 +806,16 @@ export function AddListingWizard({ mode = "create", listingId, initialValues, on
             <ScaleButton onPress={() => void goNext()} className="flex-1 rounded-full bg-rx-accent py-4">
               <Text className="text-center font-jakarta-bold text-base text-white">Next</Text>
             </ScaleButton>
-          ) : (
-            <ScaleButton onPress={() => void submit()} className="flex-1 rounded-full bg-rx-accent py-4">
-              <Text className="text-center font-jakarta-bold text-base text-white">
-                {busy ? (mode === "edit" ? "Saving..." : "Publishing...") : mode === "edit" ? "Save changes" : "Publish listing"}
-              </Text>
-            </ScaleButton>
-          )}
+            ) : (
+              <ScaleButton onPress={() => void submit()} disabled={busy} className="flex-1 rounded-full bg-rx-accent py-4">
+                <LoadingLabel
+                  loading={busy}
+                  label={mode === "edit" ? "Save changes" : "Publish listing"}
+                  loadingLabel={mode === "edit" ? "Saving changes" : "Publishing listing"}
+                  textClassName="text-center font-jakarta-bold text-base text-white"
+                />
+              </ScaleButton>
+            )}
         </View>
       </ScrollView>
       <Modal visible={Boolean(feedback)} transparent animationType="fade" onRequestClose={() => setFeedback(null)}>

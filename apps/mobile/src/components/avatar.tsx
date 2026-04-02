@@ -1,6 +1,8 @@
+import { useEffect, useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { Image } from "expo-image";
 import { getInitials } from "@roomxchange/shared/src/mobile";
+import { resolveRuntimeMediaUrl } from "../lib/runtime-config";
 
 type AvatarProps = {
   name: string;
@@ -9,8 +11,26 @@ type AvatarProps = {
 };
 
 export function Avatar({ name, avatar, size = 40 }: AvatarProps) {
-  if (avatar) {
-    return <Image source={avatar} style={{ width: size, height: size, borderRadius: size / 2 }} contentFit="cover" />;
+  const resolvedAvatar = useMemo(() => resolveRuntimeMediaUrl(avatar), [avatar]);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [resolvedAvatar]);
+
+  if (resolvedAvatar && !imageFailed) {
+    return (
+      <Image
+        source={{ uri: resolvedAvatar }}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+        contentFit="cover"
+        transition={120}
+        onError={() => {
+          console.warn("[avatar] Failed to load profile photo.", resolvedAvatar);
+          setImageFailed(true);
+        }}
+      />
+    );
   }
 
   return (

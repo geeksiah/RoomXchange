@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "expo-router";
-import { Animated, Easing, PanResponder, Text, View, useWindowDimensions } from "react-native";
+import { Animated, PanResponder, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { setOnboardingComplete } from "../src/onboarding";
 import { ScaleButton } from "../src/components/scale-button";
+import { motionDuration, motionEasing } from "../src/lib/motion";
 
 const slides = [
   {
@@ -27,6 +28,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
   const transition = useRef(new Animated.Value(1)).current;
   const hasMounted = useRef(false);
   const indexRef = useRef(index);
@@ -46,11 +48,21 @@ export default function OnboardingScreen() {
     transition.setValue(0);
     Animated.timing(transition, {
       toValue: 1,
-      duration: 260,
-      easing: Easing.bezier(0.22, 1, 0.36, 1),
+      duration: motionDuration.slow,
+      easing: motionEasing.standard,
       useNativeDriver: true
     }).start();
   }, [index, transition]);
+
+  const jumpToIndex = (nextIndex: number) => {
+    const clampedIndex = Math.max(0, Math.min(nextIndex, slides.length - 1));
+    if (clampedIndex === indexRef.current) {
+      return;
+    }
+
+    setDirection(clampedIndex > indexRef.current ? 1 : -1);
+    setIndex(clampedIndex);
+  };
 
   const continueToLogin = async () => {
     await setOnboardingComplete(true);
@@ -63,11 +75,11 @@ export default function OnboardingScreen() {
       return;
     }
 
-    setIndex((current) => Math.min(current + 1, slides.length - 1));
+    jumpToIndex(indexRef.current + 1);
   };
 
   const goPrevious = () => {
-    setIndex((current) => Math.max(current - 1, 0));
+    jumpToIndex(indexRef.current - 1);
   };
 
   const swipeResponder = useMemo(
@@ -82,7 +94,7 @@ export default function OnboardingScreen() {
               return;
             }
 
-            setIndex((current) => Math.min(current + 1, slides.length - 1));
+            jumpToIndex(indexRef.current + 1);
             return;
           }
 
@@ -94,12 +106,25 @@ export default function OnboardingScreen() {
     []
   );
 
+  const slideTranslateX = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [direction * 42, 0]
+  });
+  const slideTranslateY = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [12, 0]
+  });
+  const slideScale = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.985, 1]
+  });
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-1 pb-10 pt-2">
         <View className="px-6">
           <View className="flex-row items-center justify-end">
-            <ScaleButton onPress={() => void continueToLogin()} className="rounded-full bg-rx-background px-4 py-2.5">
+            <ScaleButton onPress={() => void continueToLogin()} className="rounded-full px-4 py-2.5">
               <Text className="font-jakarta text-sm text-rx-muted">Skip</Text>
             </ScaleButton>
           </View>
@@ -111,12 +136,9 @@ export default function OnboardingScreen() {
               flex: 1,
               opacity: transition,
               transform: [
-                {
-                  translateX: transition.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [20, 0]
-                  })
-                }
+                { translateX: slideTranslateX },
+                { translateY: slideTranslateY },
+                { scale: slideScale }
               ]
             }}
           >
@@ -152,7 +174,11 @@ export default function OnboardingScreen() {
               return (
                 <Animated.View
                   key={slideIndex}
-                  style={{ width: slideIndex === index ? 28 : 10, opacity: slideIndex === index ? 1 : 0.35 }}
+                  style={{
+                    width: slideIndex === index ? 28 : 10,
+                    opacity: slideIndex === index ? 1 : 0.35,
+                    transform: [{ scale: slideIndex === index ? 1 : 0.92 }]
+                  }}
                   className="h-2.5 rounded-full bg-rx-accent"
                 />
               );

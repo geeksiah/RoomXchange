@@ -4,10 +4,11 @@ import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
-import { ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { Alert, ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { Avatar } from "../../src/components/avatar";
+import { LoadingLabel } from "../../src/components/loading-label";
 import { ScaleButton } from "../../src/components/scale-button";
 import { SessionLoadingCard } from "../../src/components/session-loading-card";
 import { uploadPresignedFile } from "../../src/lib/presigned-upload";
@@ -16,7 +17,7 @@ import { useNotificationStore } from "../../src/stores/notification-store";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { session, api, refreshProfile, logout, hydrated } = useSession();
+  const { session, api, setSession, logout, hydrated } = useSession();
   const queryClient = useQueryClient();
   const reminders = useNotificationStore((state) => state.reminders);
   const [name, setName] = useState(session?.user.name ?? "");
@@ -50,11 +51,45 @@ export default function ProfileScreen() {
     return listingsQuery.data ?? [];
   }, [listingsQuery.data, session]);
 
+  const invalidateProfileViews = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["my-listings"] }),
+      queryClient.invalidateQueries({ queryKey: ["conversations"] }),
+      queryClient.invalidateQueries({ queryKey: ["listing"] }),
+      queryClient.invalidateQueries({ queryKey: ["conversation-listing"] }),
+      queryClient.invalidateQueries({ queryKey: ["my-reports"] })
+    ]);
+  };
+
   const updateProfileMutation = useMutation({
     mutationFn: () => api.updateProfile({ name, email, avatar, phonePublic }),
     onSuccess: async () => {
-      await refreshProfile();
-      await queryClient.invalidateQueries({ queryKey: ["my-listings"] });
+      if (!session) {
+        return;
+      }
+
+      const user = await api.getMe();
+      await setSession({
+        ...session,
+        user
+      });
+      await invalidateProfileViews();
+    }
+  });
+
+  const updateAvatarMutation = useMutation({
+    mutationFn: async (nextAvatar: string) => {
+      const updatedUser = await api.updateProfile({ avatar: nextAvatar });
+      if (session) {
+        await setSession({
+          ...session,
+          user: updatedUser
+        });
+      }
+      return updatedUser;
+    },
+    onSuccess: async () => {
+      await invalidateProfileViews();
     }
   });
 
@@ -75,22 +110,37 @@ export default function ProfileScreen() {
       return;
     }
 
+    const currentName = name;
+    const currentEmail = email;
+    const currentPhonePublic = phonePublic;
+    const previousAvatar = avatar;
     const asset = result.assets[0];
-    const compressed = await manipulateAsync(asset.uri, [{ resize: { width: 900 } }], {
-      compress: 0.82,
-      format: SaveFormat.JPEG
-    });
 
-    const upload = await api.createUpload({
-      fileName: asset.fileName ?? `roomxchange-profile-${Date.now()}.jpg`,
-      contentType: "image/jpeg"
-    });
-    await uploadPresignedFile({
-      uri: compressed.uri,
-      uploadUrl: upload.uploadUrl,
-      headers: upload.headers
-    });
-    setAvatar(upload.fileUrl);
+    try {
+      const compressed = await manipulateAsync(asset.uri, [{ resize: { width: 900 } }], {
+        compress: 0.82,
+        format: SaveFormat.JPEG
+      });
+
+      const upload = await api.createUpload({
+        fileName: asset.fileName ?? `roomxchange-profile-${Date.now()}.jpg`,
+        contentType: "image/jpeg"
+      });
+      await uploadPresignedFile({
+        uri: compressed.uri,
+        uploadUrl: upload.uploadUrl,
+        headers: upload.headers
+      });
+      setAvatar(upload.fileUrl);
+      await updateAvatarMutation.mutateAsync(upload.fileUrl);
+      setName(currentName);
+      setEmail(currentEmail);
+      setPhonePublic(currentPhonePublic);
+      setAvatar(upload.fileUrl);
+    } catch (error) {
+      setAvatar(previousAvatar);
+      Alert.alert("Couldn't update photo", error instanceof Error ? error.message : "We couldn't save your new profile photo right now.");
+    }
   };
 
   if (!hydrated) {
@@ -129,8 +179,18 @@ export default function ProfileScreen() {
               <View className="ml-4 flex-1">
                 <Text className="font-jakarta-bold text-2xl text-rx-text">{session.user.name}</Text>
                 <Text className="mt-1 font-jakarta text-sm text-rx-muted">{session.user.phone}</Text>
-                <ScaleButton onPress={() => void pickProfilePhoto()} className="mt-3 self-start rounded-full bg-rx-background px-4 py-2">
-                  <Text className="font-jakarta text-xs text-rx-text">Upload profile photo</Text>
+                <ScaleButton
+                  onPress={() => void pickProfilePhoto()}
+                  disabled={updateAvatarMutation.isPending}
+                  className="mt-3 self-start rounded-full bg-rx-background px-4 py-2"
+                >
+                  <LoadingLabel
+                    loading={updateAvatarMutation.isPending}
+                    label="Upload profile photo"
+                    loadingLabel="Saving photo"
+                    textClassName="font-jakarta text-xs text-rx-text"
+                    spinnerColor="#111111"
+                  />
                 </ScaleButton>
               </View>
             </View>
@@ -160,8 +220,17 @@ export default function ProfileScreen() {
               <Switch value={phonePublic} onValueChange={setPhonePublic} trackColor={{ false: "#EAEAEA", true: "#FFB6C4" }} thumbColor={phonePublic ? "#FF385C" : "#FFFFFF"} />
             </View>
 
-            <ScaleButton onPress={() => updateProfileMutation.mutate()} className="mt-4 rounded-full bg-rx-accent py-4">
-              <Text className="text-center font-jakarta-bold text-base text-white">{updateProfileMutation.isPending ? "Saving..." : "Save profile"}</Text>
+            <ScaleButton
+              onPress={() => updateProfileMutation.mutate()}
+              disabled={updateProfileMutation.isPending}
+              className={`mt-4 rounded-full py-4 ${updateProfileMutation.isPending ? "bg-rx-accent/80" : "bg-rx-accent"}`}
+            >
+              <LoadingLabel
+                loading={updateProfileMutation.isPending}
+                label="Save profile"
+                loadingLabel="Saving profile"
+                textClassName="text-center font-jakarta-bold text-base text-white"
+              />
             </ScaleButton>
           </View>
 

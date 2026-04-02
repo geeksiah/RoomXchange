@@ -23,9 +23,18 @@ type ExpoMapConfig = {
   };
 };
 
+type NativeMapDiagnostics = {
+  platform: string;
+  androidConfigured: boolean;
+  iosConfigured: boolean;
+  defaultManagerAvailable: boolean;
+  googleManagerAvailable: boolean;
+};
+
 function hasNativeMapManager(name: string) {
+  const hasViewManagerConfig = UIManager.hasViewManagerConfig?.bind(UIManager);
   const getViewManagerConfig = UIManager.getViewManagerConfig?.bind(UIManager);
-  return Boolean(getViewManagerConfig?.(name));
+  return Boolean(hasViewManagerConfig?.(name) || getViewManagerConfig?.(name));
 }
 
 function hasDefaultMapManager() {
@@ -51,6 +60,24 @@ function getExpoMapConfig() {
   };
 }
 
+export function getNativeMapDiagnostics(): NativeMapDiagnostics {
+  const { androidConfigured, iosConfigured } = getExpoMapConfig();
+
+  return {
+    platform: Platform.OS,
+    androidConfigured,
+    iosConfigured,
+    defaultManagerAvailable: hasDefaultMapManager(),
+    googleManagerAvailable: hasGoogleMapManager()
+  };
+}
+
+export function logNativeMapDiagnostics(scope: string) {
+  const diagnostics = getNativeMapDiagnostics();
+  console.warn(`[maps] ${scope}`, diagnostics);
+  return diagnostics;
+}
+
 export function getNativeMapProvider(): Provider | undefined {
   if (Platform.OS !== "ios") {
     return undefined;
@@ -60,13 +87,27 @@ export function getNativeMapProvider(): Provider | undefined {
   return iosConfigured && hasGoogleMapManager() ? PROVIDER_GOOGLE : undefined;
 }
 
+export function isNativeMapConfigured() {
+  const { androidConfigured, iosConfigured } = getExpoMapConfig();
+
+  if (Platform.OS === "android") {
+    return androidConfigured;
+  }
+
+  if (Platform.OS === "ios") {
+    return iosConfigured;
+  }
+
+  return false;
+}
+
 export function isNativeMapAvailable() {
   const { androidConfigured } = getExpoMapConfig();
   const defaultManagerAvailable = hasDefaultMapManager();
   const googleManagerAvailable = hasGoogleMapManager();
 
   if (Platform.OS === "android") {
-    return androidConfigured && (defaultManagerAvailable || googleManagerAvailable);
+    return androidConfigured && defaultManagerAvailable;
   }
 
   if (Platform.OS === "ios") {
@@ -78,7 +119,7 @@ export function isNativeMapAvailable() {
 
 export function getMapAvailabilityHint() {
   if (Platform.OS === "android") {
-    return "This Android build could not start the native map view. Install the latest synced build, or use the listings view for now.";
+    return "This Android build could not start the native map view. Reinstall the latest build and confirm the Android Maps SDK key is allowed for this app package and signing fingerprint.";
   }
 
   if (Platform.OS === "ios") {

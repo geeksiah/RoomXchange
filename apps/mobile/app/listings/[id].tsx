@@ -2,12 +2,13 @@ import { useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, FlatList, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { Alert, FlatList, Modal, Platform, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { formatAmenityLabel, formatMonthlyPrice } from "@roomxchange/shared/src/mobile";
 import { Avatar } from "../../src/components/avatar";
 import { BackIconButton } from "../../src/components/back-icon-button";
+import { LoadingLabel } from "../../src/components/loading-label";
 import { ScaleButton } from "../../src/components/scale-button";
 import { useSession } from "../../src/session-provider";
 
@@ -60,6 +61,11 @@ export default function ListingDetailScreen() {
 
   const listing = listingQuery.data;
 
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxVisible(true);
+  };
+
   const openPublisherProfile = () => {
     router.push({
       pathname: "/publishers/[userId]",
@@ -107,6 +113,8 @@ export default function ListingDetailScreen() {
     );
   }
 
+  const lightboxGalleryKey = `${listing.listingId}-${lightboxVisible ? lightboxIndex : "hidden"}`;
+
   return (
     <SafeAreaView className="flex-1 bg-rx-background">
       <View
@@ -127,27 +135,33 @@ export default function ListingDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 180 + bottomActionInset, paddingTop: insets.top + 72 }}>
-        <ScrollView
-          ref={heroGalleryRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(event) => {
-            setActiveImageIndex(Math.round(event.nativeEvent.contentOffset.x / width));
-          }}
-        >
-          {listing.images.map((image, index) => (
-            <Pressable
-              key={`${image}-${index}`}
-              onPress={() => {
-                setLightboxIndex(index);
-                setLightboxVisible(true);
-              }}
-            >
-              <Image source={image} style={{ width, height: 370 }} contentFit="cover" />
-            </Pressable>
-          ))}
-        </ScrollView>
+        <View>
+          <ScrollView
+            ref={heroGalleryRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled
+            onMomentumScrollEnd={(event) => {
+              setActiveImageIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+            }}
+          >
+            {listing.images.map((image, index) => (
+              <ScaleButton
+                key={`${image}-${index}`}
+                onPress={() => openLightbox(index)}
+                className="overflow-hidden"
+              >
+                <Image source={image} style={{ width, height: 370 }} contentFit="cover" />
+              </ScaleButton>
+            ))}
+          </ScrollView>
+          <View className="absolute bottom-4 right-4">
+            <ScaleButton onPress={() => openLightbox(activeImageIndex)} className="rounded-full bg-black/55 px-4 py-2.5">
+              <Text className="font-jakarta-bold text-xs text-white">Open gallery</Text>
+            </ScaleButton>
+          </View>
+        </View>
 
         {listing.images.length > 1 ? (
           <ScrollView
@@ -240,16 +254,22 @@ export default function ListingDetailScreen() {
                 }}
                 className="rounded-full bg-rx-accent px-4 py-4"
               >
-                <Text className="font-jakarta-bold text-sm text-white">
-                  {deleteListingMutation.isPending ? "Deleting..." : "Delete"}
-                </Text>
+                <LoadingLabel
+                  loading={deleteListingMutation.isPending}
+                  label="Delete"
+                  loadingLabel="Deleting"
+                  textClassName="font-jakarta-bold text-sm text-white"
+                />
               </ScaleButton>
             </View>
           ) : (
-            <ScaleButton onPress={openContact} className="rounded-full bg-rx-accent px-5 py-4">
-              <Text className="font-jakarta-bold text-sm text-white">
-                {contactMutation.isPending ? "Opening..." : "Contact Owner"}
-              </Text>
+            <ScaleButton onPress={openContact} disabled={contactMutation.isPending} className="rounded-full bg-rx-accent px-5 py-4">
+              <LoadingLabel
+                loading={contactMutation.isPending}
+                label="Contact Owner"
+                loadingLabel="Opening chat"
+                textClassName="font-jakarta-bold text-sm text-white"
+              />
             </ScaleButton>
           )}
         </View>
@@ -269,21 +289,29 @@ export default function ListingDetailScreen() {
             </Text>
           </View>
 
-          <FlatList
-            ref={galleryRef}
-            data={listing.images}
-            horizontal
-            pagingEnabled
-            initialScrollIndex={lightboxIndex}
-            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-            keyExtractor={(item, index) => `${item}-${index}`}
-            onMomentumScrollEnd={(event) => {
-              setLightboxIndex(Math.round(event.nativeEvent.contentOffset.x / width));
-            }}
-            renderItem={({ item }) => (
-              <Image source={item} style={{ width, height }} contentFit="contain" />
-            )}
-          />
+          {lightboxVisible ? (
+            <FlatList
+              key={lightboxGalleryKey}
+              ref={galleryRef}
+              data={listing.images}
+              horizontal
+              pagingEnabled
+              initialScrollIndex={lightboxIndex}
+              getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+              keyExtractor={(item, index) => `${item}-${index}`}
+              onScrollToIndexFailed={(info) => {
+                setTimeout(() => {
+                  galleryRef.current?.scrollToIndex({ index: info.index, animated: false });
+                }, 50);
+              }}
+              onMomentumScrollEnd={(event) => {
+                setLightboxIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+              }}
+              renderItem={({ item }) => (
+                <Image source={item} style={{ width, height }} contentFit="contain" />
+              )}
+            />
+          ) : null}
         </View>
       </Modal>
     </SafeAreaView>

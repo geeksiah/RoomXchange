@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createMobileApiClient, type AuthSession } from "@roomxchange/shared/src/mobile-client";
 
 type SessionContextValue = {
@@ -124,6 +124,46 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSessionState] = useState<AuthSession | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const apiBaseUrl = resolveMobileApiUrl();
+  const sessionRef = useRef<AuthSession | null>(null);
+  const validatingUnauthorizedRef = useRef(false);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  const handleUnauthorized = async () => {
+    if (validatingUnauthorizedRef.current) {
+      return;
+    }
+
+    validatingUnauthorizedRef.current = true;
+
+    try {
+      const currentSession = sessionRef.current;
+      if (!currentSession) {
+        setSessionState(null);
+        await clearStoredSession();
+        return;
+      }
+
+      const validationApi = createMobileApiClient({
+        baseUrl: apiBaseUrl,
+        getAccessToken: () => currentSession.tokens.accessToken ?? null,
+        getIdToken: () => currentSession.tokens.idToken ?? null
+      });
+      const user = await validationApi.getMe();
+
+      setSessionState({
+        ...currentSession,
+        user
+      });
+    } catch {
+      setSessionState(null);
+      await clearStoredSession();
+    } finally {
+      validatingUnauthorizedRef.current = false;
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -153,13 +193,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     () =>
       createMobileApiClient({
         baseUrl: apiBaseUrl,
-        getAccessToken: () => session?.tokens.idToken ?? null,
+        getAccessToken: () => session?.tokens.accessToken ?? null,
+        getIdToken: () => session?.tokens.idToken ?? null,
         onUnauthorized: () => {
-          setSessionState(null);
-          void clearStoredSession();
+          void handleUnauthorized();
         }
       }),
-    [apiBaseUrl, session?.tokens.idToken]
+    [apiBaseUrl, session?.tokens.accessToken, session?.tokens.idToken]
   );
   const api = remoteApi;
 

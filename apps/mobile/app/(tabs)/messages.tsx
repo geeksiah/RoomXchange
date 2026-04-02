@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { ConversationItem } from "../../src/components/conversation-item";
 import { EmptyStateCard } from "../../src/components/empty-state-card";
+import { LoadingLabel } from "../../src/components/loading-label";
 import { ScaleButton } from "../../src/components/scale-button";
 import { ScreenHeader } from "../../src/components/screen-header";
 import { SessionLoadingCard } from "../../src/components/session-loading-card";
@@ -110,15 +111,22 @@ export default function MessagesScreen() {
               }
               className="rounded-full bg-rx-accent px-3 py-2"
             >
-              <Text className="font-jakarta-bold text-[11px] text-white">
-                {deleteConversationMutation.isPending ? "Deleting..." : "Delete"}
-              </Text>
+              <LoadingLabel
+                loading={deleteConversationMutation.isPending}
+                label="Delete"
+                loadingLabel="Deleting"
+                textClassName="font-jakarta-bold text-[11px] text-white"
+              />
             </ScaleButton>
           ) : hasUnread ? (
-            <ScaleButton onPress={() => markAllReadMutation.mutate()} className="rounded-full bg-rx-background px-3 py-2">
-              <Text className="font-jakarta-bold text-[11px] text-rx-text">
-                {markAllReadMutation.isPending ? "Updating..." : "Mark all read"}
-              </Text>
+            <ScaleButton onPress={() => markAllReadMutation.mutate()} disabled={markAllReadMutation.isPending} className="rounded-full bg-rx-background px-3 py-2">
+              <LoadingLabel
+                loading={markAllReadMutation.isPending}
+                label="Mark all read"
+                loadingLabel="Updating"
+                textClassName="font-jakarta-bold text-[11px] text-rx-text"
+                spinnerColor="#111111"
+              />
             </ScaleButton>
           ) : undefined
         }

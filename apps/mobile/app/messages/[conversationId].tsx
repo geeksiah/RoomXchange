@@ -16,6 +16,7 @@ import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { Avatar } from "../../src/components/avatar";
 import { BackIconButton } from "../../src/components/back-icon-button";
 import { DismissKeyboardView } from "../../src/components/dismiss-keyboard-view";
+import { LoadingLabel } from "../../src/components/loading-label";
 import { openPhoneCall, openWhatsApp } from "../../src/lib/contact-actions";
 import { ScaleButton } from "../../src/components/scale-button";
 import { SessionLoadingCard } from "../../src/components/session-loading-card";
@@ -170,9 +171,12 @@ export default function ConversationScreen() {
                   }
                   className="rounded-full bg-rx-accent px-4 py-2.5"
                 >
-                  <Text className="font-jakarta-bold text-xs text-white">
-                    {deleteMessagesMutation.isPending ? "Deleting..." : "Delete"}
-                  </Text>
+                  <LoadingLabel
+                    loading={deleteMessagesMutation.isPending}
+                    label="Delete"
+                    loadingLabel="Deleting"
+                    textClassName="font-jakarta-bold text-xs text-white"
+                  />
                 </ScaleButton>
               </>
             ) : (
@@ -252,7 +256,12 @@ export default function ConversationScreen() {
                 disabled={!body.trim() || sendMutation.isPending}
                 className={`rounded-full px-5 py-4 ${!body.trim() || sendMutation.isPending ? "bg-rx-border" : "bg-rx-accent"}`}
               >
-                <Text className="font-jakarta-bold text-sm text-white">Send</Text>
+                <LoadingLabel
+                  loading={sendMutation.isPending}
+                  label="Send"
+                  loadingLabel="Sending"
+                  textClassName="font-jakarta-bold text-sm text-white"
+                />
               </ScaleButton>
             </View>
           </View>

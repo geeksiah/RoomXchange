@@ -41,6 +41,10 @@ const androidGoogleServicesFile = process.env.GOOGLE_SERVICES_JSON || existsSync
 const sharedGoogleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim();
 const androidGoogleMapsApiKey = process.env.EXPO_PUBLIC_ANDROID_GOOGLE_MAPS_API_KEY?.trim() || sharedGoogleMapsApiKey;
 const iosGoogleMapsApiKey = process.env.EXPO_PUBLIC_IOS_GOOGLE_MAPS_API_KEY?.trim() || sharedGoogleMapsApiKey;
+const mapboxPublicToken =
+  process.env.EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN?.trim() ||
+  process.env.ROOMXCHANGE_MAPBOX_PUBLIC_TOKEN?.trim() ||
+  "";
 const defaultWebUrl = "https://roomxchange.netlify.app";
 const configuredWebUrl = process.env.EXPO_PUBLIC_ROOMXCHANGE_WEB_URL?.trim();
 const appWebUrl =
@@ -59,6 +63,7 @@ const config: ExpoConfig = {
   owner: "nsiahgh6",
   scheme: "roomxchange",
   version: "1.0.0",
+  newArchEnabled: true,
   orientation: "portrait",
   userInterfaceStyle: "light",
   icon: "./src/assets/icon-primary-bg.png",
@@ -104,9 +109,11 @@ const config: ExpoConfig = {
       projectId: "9e11f47c-5b61-4f3b-a09d-7c13ce5f0fda"
     },
     apiUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_API_URL ?? "",
+    mediaUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_MEDIA_URL ?? "",
     webUrl: appWebUrl,
     socketUrl: process.env.EXPO_PUBLIC_ROOMXCHANGE_SOCKET_URL ?? "",
     pushProjectId: process.env.EXPO_PUBLIC_ROOMXCHANGE_PUSH_PROJECT_ID ?? "",
+    mapboxToken: mapboxPublicToken,
     supportUrl,
     privacyPolicyUrl,
     accountDeletionUrl,

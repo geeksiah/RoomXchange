@@ -43,7 +43,7 @@ export default function RootLayout() {
                   screenOptions={{
                     headerShown: false,
                     contentStyle: { backgroundColor: "#F7F7F7" },
-                    animation: Platform.OS === "android" ? "fade_from_bottom" : "default"
+                    animation: Platform.OS === "android" ? "slide_from_right" : "default"
                   }}
                 >
                   <Stack.Screen name="index" />

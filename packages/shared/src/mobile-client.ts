@@ -141,6 +141,7 @@ export function parseRealtimeEvent(value: unknown): RealtimeEvent {
 type ApiClientOptions = {
   baseUrl?: string;
   getAccessToken?: () => Promise<string | null> | string | null;
+  getIdToken?: () => Promise<string | null> | string | null;
   onUnauthorized?: () => void;
 };
 
@@ -222,34 +223,57 @@ async function request<T>(
   options: RequestOptions = {},
   client?: ApiClientOptions
 ) {
-  const resolvedToken = options.token ?? (await client?.getAccessToken?.());
   const baseURL = resolveApiBaseUrl(client?.baseUrl);
 
   if (!baseURL) {
     throw new Error("RoomXchange API URL is missing from this mobile build.");
   }
 
-  const config: AxiosRequestConfig = {
-    url: path,
-    baseURL,
-    method: options.method ?? "GET",
-    headers: {
-      ...(resolvedToken ? { authorization: `Bearer ${resolvedToken}` } : {}),
-      ...(options.body ? { "content-type": "application/json" } : {})
-    },
-    data: options.body,
-    params: options.params
-  };
+  const resolvedTokens =
+    options.token !== undefined
+      ? [options.token]
+      : [
+          await client?.getAccessToken?.(),
+          await client?.getIdToken?.()
+        ];
 
-  try {
-    const response = await axios.request(config);
-    return schema.parse(response.data);
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      client?.onUnauthorized?.();
+  const authTokens = [...new Set(resolvedTokens.filter((token): token is string => Boolean(token?.trim())))];
+  const attempts = authTokens.length ? authTokens : [null];
+
+  for (let index = 0; index < attempts.length; index += 1) {
+    const resolvedToken = attempts[index];
+    const config: AxiosRequestConfig = {
+      url: path,
+      baseURL,
+      method: options.method ?? "GET",
+      headers: {
+        ...(resolvedToken ? { authorization: `Bearer ${resolvedToken}` } : {}),
+        ...(options.body ? { "content-type": "application/json" } : {})
+      },
+      data: options.body,
+      params: options.params
+    };
+
+    try {
+      const response = await axios.request(config);
+      return schema.parse(response.data);
+    } catch (error) {
+      const unauthorized = axios.isAxiosError(error) && error.response?.status === 401;
+      const hasMoreAuthAttempts = unauthorized && index < attempts.length - 1;
+
+      if (hasMoreAuthAttempts) {
+        continue;
+      }
+
+      if (unauthorized && authTokens.length > 0) {
+        client?.onUnauthorized?.();
+      }
+
+      throw new Error(parseApiError(error, "Request failed."));
     }
-    throw new Error(parseApiError(error, "Request failed."));
   }
+
+  throw new Error("Request failed.");
 }
 
 export function createMobileApiClient(options: ApiClientOptions = {}) {

@@ -78,12 +78,13 @@ function AddTabButton({ accessibilityState, onPress, onLongPress, bottomInset }:
       accessibilityState={accessibilityState}
       onPress={() => onPress?.()}
       onLongPress={() => onLongPress?.()}
-      className="items-center justify-end"
-      style={{ width: 88, marginTop: -24, paddingBottom: Math.max(bottomInset - 14, 0) }}
+      className="flex-1 items-center justify-end"
+      style={{ height: "100%", paddingBottom: Math.max(bottomInset - 16, 0) }}
     >
       <View
-        className="h-[68px] w-[68px] items-center justify-center rounded-full bg-rx-accent"
+        className="h-[66px] w-[66px] items-center justify-center rounded-full bg-rx-accent"
         style={{
+          marginTop: -22,
           shadowColor: "#111111",
           shadowOpacity: focused ? 0.28 : 0.22,
           shadowRadius: focused ? 24 : 18,

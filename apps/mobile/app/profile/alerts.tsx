@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { formatListingSubtypeLabel } from "@roomxchange/shared/src/mobile";
 import { AuthRedirectCard } from "../../src/components/auth-redirect-card";
 import { BackIconButton } from "../../src/components/back-icon-button";
+import { LoadingLabel } from "../../src/components/loading-label";
 import { PriceRangeSlider } from "../../src/components/price-range-slider";
 import { ScreenHeader } from "../../src/components/screen-header";
 import { ScaleButton } from "../../src/components/scale-button";
@@ -224,7 +225,12 @@ export default function AlertsScreen() {
                   }}
                   className={`flex-1 rounded-full py-4 ${submitting ? "bg-rx-border" : "bg-rx-accent"}`}
                 >
-                  <Text className="text-center font-jakarta-bold text-base text-white">{submitting ? "Saving..." : "Save alert"}</Text>
+                  <LoadingLabel
+                    loading={submitting}
+                    label="Save alert"
+                    loadingLabel="Saving alert"
+                    textClassName="text-center font-jakarta-bold text-base text-white"
+                  />
                 </ScaleButton>
               </View>
               {feedback ? <Text className="mt-3 font-jakarta text-sm text-rx-muted">{feedback}</Text> : null}

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { Modal, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal, Platform, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar } from "../../src/components/avatar";
 import { BackIconButton } from "../../src/components/back-icon-button";
@@ -25,6 +25,7 @@ export default function PublisherProfileScreen() {
   const { api, session } = useSession();
   const [reportVisible, setReportVisible] = useState(false);
   const [reason, setReason] = useState("");
+  const isAndroid = Platform.OS === "android";
 
   const listingsQuery = useQuery({
     queryKey: ["publisher-listings", params.userId],
@@ -110,40 +111,79 @@ export default function PublisherProfileScreen() {
           </View>
         </ScrollView>
 
-        <Modal visible={reportVisible} transparent animationType="fade" onRequestClose={() => setReportVisible(false)}>
-          <View className="flex-1 justify-end bg-black/28">
-            <ScaleButton onPress={() => setReportVisible(false)} className="flex-1 bg-transparent">
-              <View />
-            </ScaleButton>
-            <View
-              className="rounded-t-[32px] bg-white px-5 pb-8 pt-4"
-              style={{ shadowColor: "#111111", shadowOpacity: 0.12, shadowRadius: 24, shadowOffset: { width: 0, height: -8 }, elevation: 16 }}
-            >
-              <View className="mb-4 h-1.5 w-14 self-center rounded-full bg-rx-border" />
-              <Text className="font-jakarta-bold text-2xl text-rx-text">Report publisher</Text>
-              <Text className="mt-2 font-jakarta text-sm leading-6 text-rx-muted">Describe the issue clearly. This goes to the platform owner.</Text>
-              <TextInput
-                value={reason}
-                onChangeText={setReason}
-                multiline
-                returnKeyType="done"
-                textAlignVertical="top"
-                placeholder="Describe the concern..."
-                placeholderTextColor="#6B7280"
-                className="mt-4 min-h-[150px] rounded-2xl bg-rx-background px-4 py-4 font-jakarta text-base leading-6 text-rx-text"
-              />
-              <View className="mt-5 flex-row gap-3">
-                <ScaleButton onPress={() => setReportVisible(false)} className="flex-1 rounded-full bg-rx-background py-4">
-                  <Text className="text-center font-jakarta-bold text-base text-rx-text">Cancel</Text>
-                </ScaleButton>
-                <ScaleButton onPress={() => reportMutation.mutate()} className="flex-1 rounded-full bg-rx-accent py-4">
-                  <Text className="text-center font-jakarta-bold text-base text-white">
-                    {reportMutation.isPending ? "Sending..." : "Submit report"}
-                  </Text>
+        <Modal visible={reportVisible} transparent={!isAndroid} animationType={isAndroid ? "slide" : "fade"} onRequestClose={() => setReportVisible(false)} statusBarTranslucent={isAndroid}>
+          {isAndroid ? (
+            <SafeAreaView className="flex-1 bg-rx-background">
+              <View className="flex-row items-center justify-between px-4 pb-3 pt-2">
+                <View className="mr-4 flex-1">
+                  <Text className="font-jakarta-bold text-2xl text-rx-text">Report publisher</Text>
+                  <Text className="mt-1 font-jakarta text-sm text-rx-muted">Describe the issue clearly. This goes to the platform owner.</Text>
+                </View>
+                <ScaleButton onPress={() => setReportVisible(false)} className="h-11 w-11 items-center justify-center rounded-full bg-white">
+                  <Ionicons name="close" size={20} color="#111111" />
                 </ScaleButton>
               </View>
+
+              <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+                <View className="rounded-3xl bg-white p-5">
+                  <TextInput
+                    value={reason}
+                    onChangeText={setReason}
+                    multiline
+                    returnKeyType="done"
+                    textAlignVertical="top"
+                    placeholder="Describe the concern..."
+                    placeholderTextColor="#6B7280"
+                    className="min-h-[180px] rounded-2xl bg-rx-background px-4 py-4 font-jakarta text-base leading-6 text-rx-text"
+                  />
+                  <View className="mt-5 flex-row gap-3">
+                    <ScaleButton onPress={() => setReportVisible(false)} className="flex-1 rounded-full bg-rx-background py-4">
+                      <Text className="text-center font-jakarta-bold text-base text-rx-text">Cancel</Text>
+                    </ScaleButton>
+                    <ScaleButton onPress={() => reportMutation.mutate()} className="flex-1 rounded-full bg-rx-accent py-4">
+                      <Text className="text-center font-jakarta-bold text-base text-white">
+                        {reportMutation.isPending ? "Sending..." : "Submit report"}
+                      </Text>
+                    </ScaleButton>
+                  </View>
+                </View>
+              </ScrollView>
+            </SafeAreaView>
+          ) : (
+            <View className="flex-1 justify-end bg-black/28">
+              <ScaleButton onPress={() => setReportVisible(false)} className="flex-1 bg-transparent">
+                <View />
+              </ScaleButton>
+              <View
+                className="rounded-t-[32px] bg-white px-5 pb-8 pt-4"
+                style={{ shadowColor: "#111111", shadowOpacity: 0.12, shadowRadius: 24, shadowOffset: { width: 0, height: -8 }, elevation: 16 }}
+              >
+                <View className="mb-4 h-1.5 w-14 self-center rounded-full bg-rx-border" />
+                <Text className="font-jakarta-bold text-2xl text-rx-text">Report publisher</Text>
+                <Text className="mt-2 font-jakarta text-sm leading-6 text-rx-muted">Describe the issue clearly. This goes to the platform owner.</Text>
+                <TextInput
+                  value={reason}
+                  onChangeText={setReason}
+                  multiline
+                  returnKeyType="done"
+                  textAlignVertical="top"
+                  placeholder="Describe the concern..."
+                  placeholderTextColor="#6B7280"
+                  className="mt-4 min-h-[150px] rounded-2xl bg-rx-background px-4 py-4 font-jakarta text-base leading-6 text-rx-text"
+                />
+                <View className="mt-5 flex-row gap-3">
+                  <ScaleButton onPress={() => setReportVisible(false)} className="flex-1 rounded-full bg-rx-background py-4">
+                    <Text className="text-center font-jakarta-bold text-base text-rx-text">Cancel</Text>
+                  </ScaleButton>
+                  <ScaleButton onPress={() => reportMutation.mutate()} className="flex-1 rounded-full bg-rx-accent py-4">
+                    <Text className="text-center font-jakarta-bold text-base text-white">
+                      {reportMutation.isPending ? "Sending..." : "Submit report"}
+                    </Text>
+                  </ScaleButton>
+                </View>
+              </View>
             </View>
-          </View>
+          )}
         </Modal>
       </DismissKeyboardView>
     </SafeAreaView>

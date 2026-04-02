@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
@@ -17,6 +18,7 @@ import {
 import { sanitizePhone } from "@roomxchange/shared/src/mobile";
 import { logDeveloperError } from "../lib/dev-log";
 import { useSession } from "../session-provider";
+import { LoadingLabel } from "./loading-label";
 import { ScaleButton } from "./scale-button";
 
 function getFriendlyLoginError(error: unknown) {
@@ -388,9 +390,12 @@ export function AuthPanel({ title, mode = "login" }: { title?: string; mode?: Au
           }}
           className="mt-1 rounded-full bg-rx-accent py-4"
         >
-          <Text className="text-center font-jakarta-bold text-base text-white">
-            {pending ? pendingLabel : submitLabel}
-          </Text>
+          <LoadingLabel
+            loading={pending}
+            label={submitLabel}
+            loadingLabel={pendingLabel}
+            textClassName="text-center font-jakarta-bold text-base text-white"
+          />
         </ScaleButton>
 
       </View>
@@ -438,16 +443,32 @@ function Input({
   returnKeyType?: "done" | "next";
   secureTextEntry?: boolean;
 }) {
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const shouldMaskValue = Boolean(secureTextEntry && !passwordVisible);
+
   return (
-    <TextInput
-      value={value}
-      onChangeText={onChangeText}
-      keyboardType={keyboardType}
-      returnKeyType={returnKeyType}
-      secureTextEntry={secureTextEntry}
-      placeholder={placeholder}
-      placeholderTextColor="#6B7280"
-      className="rounded-2xl border border-rx-border bg-rx-background px-4 py-4 font-jakarta text-base leading-6 text-rx-text"
-    />
+    <View className="flex-row items-center rounded-2xl border border-rx-border bg-rx-background">
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        returnKeyType={returnKeyType}
+        secureTextEntry={shouldMaskValue}
+        placeholder={placeholder}
+        placeholderTextColor="#6B7280"
+        className="flex-1 px-4 py-4 font-jakarta text-base leading-6 text-rx-text"
+      />
+      {secureTextEntry ? (
+        <Pressable
+          onPress={() => setPasswordVisible((current) => !current)}
+          hitSlop={10}
+          className="px-4 py-3"
+          accessibilityRole="button"
+          accessibilityLabel={passwordVisible ? "Hide password" : "Show password"}
+        >
+          <Ionicons name={passwordVisible ? "eye-off-outline" : "eye-outline"} size={20} color="#6B7280" />
+        </Pressable>
+      ) : null}
+    </View>
   );
 }

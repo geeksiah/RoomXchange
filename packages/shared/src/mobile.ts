@@ -154,6 +154,39 @@ export function buildMapboxSearchUrl(query: string) {
   return `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(query)}&limit=8&country=GH&language=en&access_token=${roomXchangeConfig.mapboxToken}`;
 }
 
+export function buildStaticMapUrl(lat: number, lng: number, zoom = 11) {
+  if (!roomXchangeConfig.mapboxToken) {
+    return null;
+  }
+
+  return `https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/pin-l+ff385c(${lng},${lat})/${lng},${lat},${zoom}/1200x700?access_token=${roomXchangeConfig.mapboxToken}`;
+}
+
+export function resolveMediaUrl(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  if (!trimmedValue) {
+    return null;
+  }
+
+  if (/^https?:\/\//i.test(trimmedValue)) {
+    return trimmedValue;
+  }
+
+  if (!roomXchangeConfig.mediaUrl) {
+    return trimmedValue;
+  }
+
+  try {
+    return new URL(trimmedValue.replace(/^\/+/, ""), `${roomXchangeConfig.mediaUrl.replace(/\/+$/, "")}/`).toString();
+  } catch {
+    return trimmedValue;
+  }
+}
+
 export type {
   ConversationSummary,
   FeedQueryInput,

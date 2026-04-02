@@ -1,7 +1,8 @@
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
 import { getOnboardingComplete } from "../src/onboarding";
+import { SessionLoadingCard } from "../src/components/session-loading-card";
 import { useSession } from "../src/session-provider";
 
 export default function AppEntryScreen() {
@@ -14,8 +15,8 @@ export default function AppEntryScreen() {
 
   if (!hydrated || onboardingComplete === null) {
     return (
-      <View className="flex-1 items-center justify-center bg-rx-background">
-        <ActivityIndicator color="#FF385C" />
+      <View className="flex-1 justify-center bg-rx-background px-6">
+        <SessionLoadingCard title="Getting RoomXchange ready" description="We are restoring your account and app preferences." />
       </View>
     );
   }
