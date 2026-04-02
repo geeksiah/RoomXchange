@@ -136,7 +136,13 @@ export async function sendPushNotificationToUser(userId: string, notification: N
     sound: "default",
     title: notification.title,
     body: notification.body,
-    data: notification.listingId ? { listingId: notification.listingId } : {}
+    data: notification.listingId ? { listingId: notification.listingId } : {},
+    priority: "high" as const,
+    ...(item.platform === "android"
+      ? {
+          channelId: "default"
+        }
+      : {})
   }));
 
   try {

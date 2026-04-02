@@ -7,7 +7,7 @@ import { formatListingSubtypeLabel } from "@roomxchange/shared/src/mobile";
 import { motionDuration, motionEasing } from "../lib/motion";
 import { PriceRangeSlider } from "./price-range-slider";
 import { ScaleButton } from "./scale-button";
-import { useSearchStore } from "../stores/search-store";
+import { useSearchStore, type SearchFilters } from "../stores/search-store";
 
 type FilterSheetProps = {
   visible: boolean;
@@ -30,13 +30,54 @@ export function FilterSheet({ visible, onClose }: FilterSheetProps) {
     minPrice,
     maxPrice,
     hasVr,
-    setLocation,
-    setPropertyType,
-    toggleListingSubtype,
-    setPriceRange,
-    setHasVr,
-    resetFilters
+    setFilters
   } = useSearchStore();
+  const [draftLocation, setDraftLocation] = useState(location);
+  const [draftPropertyType, setDraftPropertyType] = useState(propertyType);
+  const [draftListingSubtypes, setDraftListingSubtypes] = useState(listingSubtypes);
+  const [draftMinPrice, setDraftMinPrice] = useState(minPrice);
+  const [draftMaxPrice, setDraftMaxPrice] = useState(maxPrice);
+  const [draftHasVr, setDraftHasVr] = useState(hasVr);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    setDraftLocation(location);
+    setDraftPropertyType(propertyType);
+    setDraftListingSubtypes(listingSubtypes);
+    setDraftMinPrice(minPrice);
+    setDraftMaxPrice(maxPrice);
+    setDraftHasVr(hasVr);
+  }, [hasVr, listingSubtypes, location, maxPrice, minPrice, propertyType, visible]);
+
+  const toggleDraftListingSubtype = (value: SearchFilters["listingSubtypes"][number]) => {
+    setDraftListingSubtypes((current) =>
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
+    );
+  };
+
+  const resetDraftFilters = () => {
+    setDraftLocation("");
+    setDraftPropertyType("all");
+    setDraftListingSubtypes([]);
+    setDraftMinPrice(0);
+    setDraftMaxPrice(6000);
+    setDraftHasVr(false);
+  };
+
+  const applyDraftFilters = () => {
+    setFilters({
+      location: draftLocation,
+      propertyType: draftPropertyType,
+      listingSubtypes: draftListingSubtypes,
+      minPrice: draftMinPrice,
+      maxPrice: draftMaxPrice,
+      hasVr: draftHasVr
+    });
+    onClose();
+  };
 
   useEffect(() => {
     if (isAndroid) {
@@ -90,8 +131,8 @@ export function FilterSheet({ visible, onClose }: FilterSheetProps) {
         <View>
           <Text className="mb-2 font-jakarta-bold text-sm text-rx-text">Location</Text>
           <TextInput
-            value={location}
-            onChangeText={setLocation}
+            value={draftLocation}
+            onChangeText={setDraftLocation}
             placeholder="Accra, East Legon..."
             placeholderTextColor="#6B7280"
             returnKeyType="done"
@@ -108,11 +149,11 @@ export function FilterSheet({ visible, onClose }: FilterSheetProps) {
                 { key: "room", label: "Rooms" },
                 { key: "apartment", label: "Apartments" }
               ].map((item) => {
-                const active = propertyType === item.key;
+                const active = draftPropertyType === item.key;
                 return (
                   <ScaleButton
                     key={item.key}
-                    onPress={() => setPropertyType(item.key as "all" | "room" | "apartment")}
+                    onPress={() => setDraftPropertyType(item.key as "all" | "room" | "apartment")}
                     className={`rounded-full px-4 py-3 ${active ? "bg-rx-text" : "border border-rx-border bg-rx-background"}`}
                   >
                     <Text className={`font-jakarta-bold text-sm ${active ? "text-white" : "text-rx-text"}`} numberOfLines={1}>
@@ -130,11 +171,11 @@ export function FilterSheet({ visible, onClose }: FilterSheetProps) {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} overScrollMode="never">
             <View className="flex-row gap-2 pr-4">
               {["studio", "single_room_sc", "one_bedroom", "two_bedroom_plus"].map((item) => {
-                const active = listingSubtypes.includes(item as typeof listingSubtypes[number]);
+                const active = draftListingSubtypes.includes(item as typeof draftListingSubtypes[number]);
                 return (
                   <ScaleButton
                     key={item}
-                    onPress={() => toggleListingSubtype(item as typeof listingSubtypes[number])}
+                    onPress={() => toggleDraftListingSubtype(item as typeof draftListingSubtypes[number])}
                     className={`rounded-full px-4 py-3 ${active ? "bg-rx-text" : "border border-rx-border bg-rx-background"}`}
                   >
                     <Text className={`font-jakarta-bold text-sm ${active ? "text-white" : "text-rx-text"}`} numberOfLines={1}>
@@ -149,7 +190,10 @@ export function FilterSheet({ visible, onClose }: FilterSheetProps) {
 
         <View className="rounded-3xl bg-rx-background p-4">
           <Text className="mb-3 font-jakarta-bold text-sm text-rx-text">Price range</Text>
-          <PriceRangeSlider minValue={minPrice} maxValue={maxPrice} onChange={setPriceRange} />
+          <PriceRangeSlider minValue={draftMinPrice} maxValue={draftMaxPrice} onChange={(nextMinPrice, nextMaxPrice) => {
+            setDraftMinPrice(nextMinPrice);
+            setDraftMaxPrice(nextMaxPrice);
+          }} />
         </View>
 
         <View className="flex-row items-center justify-between rounded-3xl bg-rx-background px-4 py-4">
@@ -157,7 +201,7 @@ export function FilterSheet({ visible, onClose }: FilterSheetProps) {
             <Text className="font-jakarta-bold text-sm text-rx-text">3D tours only</Text>
             <Text className="mt-1 font-jakarta text-xs leading-5 text-rx-muted">Only show listings that already include an interactive walkthrough.</Text>
           </View>
-          <Switch value={hasVr} onValueChange={setHasVr} trackColor={{ false: "#EAEAEA", true: "#FFB6C4" }} thumbColor={hasVr ? "#FF385C" : "#FFFFFF"} />
+          <Switch value={draftHasVr} onValueChange={setDraftHasVr} trackColor={{ false: "#EAEAEA", true: "#FFB6C4" }} thumbColor={draftHasVr ? "#FF385C" : "#FFFFFF"} />
         </View>
       </View>
     </>
@@ -167,13 +211,13 @@ export function FilterSheet({ visible, onClose }: FilterSheetProps) {
     <View className="flex-row gap-3">
       <ScaleButton
         onPress={() => {
-          resetFilters();
+          resetDraftFilters();
         }}
         className="flex-1 rounded-full bg-rx-background py-4"
       >
         <Text className="text-center font-jakarta-bold text-base text-rx-text">Reset</Text>
       </ScaleButton>
-      <ScaleButton onPress={onClose} className="flex-1 rounded-full bg-rx-accent py-4">
+      <ScaleButton onPress={applyDraftFilters} className="flex-1 rounded-full bg-rx-accent py-4">
         <Text className="text-center font-jakarta-bold text-base text-white">Apply</Text>
       </ScaleButton>
     </View>

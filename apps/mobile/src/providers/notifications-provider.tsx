@@ -1,9 +1,10 @@
 import * as SecureStore from "expo-secure-store";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "expo-router";
 import { Animated, AppState, Text, View } from "react-native";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import { getRuntimePushProjectId } from "../lib/runtime-config";
 import { ScaleButton } from "../components/scale-button";
 import { useSession } from "../session-provider";
 import { useNotificationStore } from "../stores/notification-store";
@@ -48,6 +49,20 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const setReminders = useNotificationStore((state) => state.setReminders);
   const createNotification = useNotificationStore((state) => state.createNotification);
   const registeredTokenRef = useRef<{ userId: string; token: string } | null>(null);
+  const handledNotificationResponseRef = useRef<string | null>(null);
+
+  const openNotificationDestination = useCallback(
+    (data?: Record<string, unknown>) => {
+      const listingId = typeof data?.listingId === "string" ? data.listingId : null;
+      if (listingId) {
+        router.push(`/listings/${listingId}`);
+        return;
+      }
+
+      router.push("/notifications");
+    },
+    [router]
+  );
 
   useEffect(() => {
     let active = true;
@@ -115,7 +130,21 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, [api, session, setNotifications, setReminders, setRemoteSettings]);
 
   useEffect(() => {
-    const projectId = process.env.EXPO_PUBLIC_ROOMXCHANGE_PUSH_PROJECT_ID ?? "";
+    if (Platform.OS !== "android") {
+      return;
+    }
+
+    void Notifications.setNotificationChannelAsync("default", {
+      name: "RoomXchange",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#FF385C",
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC
+    }).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const projectId = getRuntimePushProjectId();
     setPushConfigured(Boolean(projectId));
 
     const boot = async () => {
@@ -158,6 +187,40 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       subscription.remove();
     };
   }, [createNotification, pushEnabled, session, setExpoPushToken, setPermissionStatus, setPushConfigured, settings.pushEnabled]);
+
+  useEffect(() => {
+    let active = true;
+    const handleNotificationResponse = (response: Notifications.NotificationResponse | null) => {
+      if (!response) {
+        return;
+      }
+
+      const identifier = response.notification.request.identifier;
+      if (identifier && handledNotificationResponseRef.current === identifier) {
+        return;
+      }
+
+      handledNotificationResponseRef.current = identifier ?? null;
+      openNotificationDestination(response.notification.request.content.data as Record<string, unknown> | undefined);
+    };
+
+    void Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (active) {
+          handleNotificationResponse(response);
+        }
+      })
+      .catch(() => undefined);
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      handleNotificationResponse(response);
+    });
+
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, [openNotificationDestination]);
 
   useEffect(() => {
     let active = true;

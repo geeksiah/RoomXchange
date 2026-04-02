@@ -64,7 +64,6 @@ const config: ExpoConfig = {
   scheme: "roomxchange",
   version: "1.0.0",
   newArchEnabled: true,
-  orientation: "portrait",
   userInterfaceStyle: "light",
   icon: "./src/assets/icon-primary-bg.png",
   splash: {
@@ -103,7 +102,13 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true
   },
-  plugins: ["expo-router", "expo-notifications", "expo-secure-store", "./plugins/with-monorepo-android-bundle"],
+  plugins: [
+    "expo-router",
+    "expo-notifications",
+    "expo-secure-store",
+    "./plugins/with-monorepo-android-bundle",
+    "./plugins/with-android-display-compliance"
+  ],
   extra: {
     eas: {
       projectId: "9e11f47c-5b61-4f3b-a09d-7c13ce5f0fda"

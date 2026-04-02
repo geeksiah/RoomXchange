@@ -17,7 +17,7 @@ import { useNotificationStore } from "../../src/stores/notification-store";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { session, api, setSession, logout, hydrated } = useSession();
+  const { session, api, refreshProfile, logout, hydrated } = useSession();
   const queryClient = useQueryClient();
   const reminders = useNotificationStore((state) => state.reminders);
   const [name, setName] = useState(session?.user.name ?? "");
@@ -53,6 +53,8 @@ export default function ProfileScreen() {
 
   const invalidateProfileViews = async () => {
     await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["home-feed"] }),
+      queryClient.invalidateQueries({ queryKey: ["explore-feed"] }),
       queryClient.invalidateQueries({ queryKey: ["my-listings"] }),
       queryClient.invalidateQueries({ queryKey: ["conversations"] }),
       queryClient.invalidateQueries({ queryKey: ["listing"] }),
@@ -64,33 +66,18 @@ export default function ProfileScreen() {
   const updateProfileMutation = useMutation({
     mutationFn: () => api.updateProfile({ name, email, avatar, phonePublic }),
     onSuccess: async () => {
-      if (!session) {
-        return;
-      }
-
-      const user = await api.getMe();
-      await setSession({
-        ...session,
-        user
-      });
+      await refreshProfile();
       await invalidateProfileViews();
     }
   });
 
   const updateAvatarMutation = useMutation({
-    mutationFn: async (nextAvatar: string) => {
-      const updatedUser = await api.updateProfile({ avatar: nextAvatar });
-      if (session) {
-        await setSession({
-          ...session,
-          user: updatedUser
-        });
-      }
-      return updatedUser;
-    },
-    onSuccess: async () => {
+    mutationFn: (nextAvatar: string) => api.updateProfile({ avatar: nextAvatar }),
+    onSuccess: async (updatedUser) => {
+      setAvatar(updatedUser.avatar ?? "");
+      await refreshProfile();
       await invalidateProfileViews();
-    }
+    },
   });
 
   const pickProfilePhoto = async () => {

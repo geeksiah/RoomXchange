@@ -2,8 +2,12 @@ import Constants from "expo-constants";
 
 type RuntimeExtraConfig = {
   apiUrl?: string;
+  eas?: {
+    projectId?: string;
+  };
   mapboxToken?: string;
   mediaUrl?: string;
+  pushProjectId?: string;
 };
 
 function getRuntimeExtra() {
@@ -16,6 +20,25 @@ export function getRuntimeMapboxToken() {
 
 export function getRuntimeMediaUrl() {
   return (getRuntimeExtra().mediaUrl ?? process.env.EXPO_PUBLIC_ROOMXCHANGE_MEDIA_URL ?? "").trim();
+}
+
+export function getRuntimePushProjectId() {
+  const constantsWithEas = Constants as typeof Constants & {
+    easConfig?: {
+      projectId?: string;
+    };
+  };
+  const easProjectId = constantsWithEas.easConfig?.projectId?.trim();
+  if (easProjectId) {
+    return easProjectId;
+  }
+
+  const runtimeProjectId = getRuntimeExtra().pushProjectId?.trim() || getRuntimeExtra().eas?.projectId?.trim();
+  if (runtimeProjectId) {
+    return runtimeProjectId;
+  }
+
+  return (process.env.EXPO_PUBLIC_ROOMXCHANGE_PUSH_PROJECT_ID ?? "").trim();
 }
 
 export function buildRuntimeMapboxSearchUrl(query: string) {

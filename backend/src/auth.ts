@@ -10,6 +10,7 @@ import {
 import { randomUUID } from "node:crypto";
 import { DeleteCommand, GetCommand, PutCommand, ScanCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import {
+  authRefreshSchema,
   authLoginSchema,
   authPasswordResetRequestSchema,
   authPasswordResetVerifySchema,
@@ -392,6 +393,37 @@ export async function loginWithPassword(input: unknown): Promise<AuthSession> {
   return {
     user,
     tokens: buildAuthTokens(response.AuthenticationResult)
+  };
+}
+
+export async function refreshUserSession(input: unknown): Promise<AuthSession> {
+  const parsed = authRefreshSchema.parse(input);
+  const response = await cognito.send(
+    new AdminInitiateAuthCommand({
+      UserPoolId: env.USER_POOL_ID,
+      ClientId: env.USER_POOL_CLIENT_ID,
+      AuthFlow: "REFRESH_TOKEN_AUTH",
+      AuthParameters: {
+        REFRESH_TOKEN: parsed.refreshToken
+      }
+    })
+  );
+
+  if (!response.AuthenticationResult?.IdToken || !response.AuthenticationResult.AccessToken) {
+    throw new AppError(401, "Unable to refresh this session. Please sign in again.");
+  }
+
+  const claims = decodeJwtPayload<CognitoClaims>(response.AuthenticationResult.IdToken);
+  const item = await getUserItem(claims.sub);
+  const user = item ? toPublicUser(item) : await upsertUserProfileFromClaims(claims);
+  assertActiveUser(user);
+
+  return {
+    user,
+    tokens: {
+      ...buildAuthTokens(response.AuthenticationResult),
+      refreshToken: parsed.refreshToken
+    }
   };
 }
 

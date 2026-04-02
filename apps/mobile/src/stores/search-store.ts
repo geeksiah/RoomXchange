@@ -1,15 +1,24 @@
 import { create } from "zustand";
 import type { FeedQueryInput } from "@roomxchange/shared";
 
-type SearchState = {
-  locationLabel: string;
-  query: string;
+export type SearchFilters = {
   location: string;
   propertyType: "all" | "room" | "apartment";
   listingSubtypes: ("studio" | "single_room_sc" | "one_bedroom" | "two_bedroom_plus")[];
   minPrice: number;
   maxPrice: number;
   hasVr: boolean;
+};
+
+type SearchState = {
+  locationLabel: string;
+  query: string;
+  location: SearchFilters["location"];
+  propertyType: SearchFilters["propertyType"];
+  listingSubtypes: SearchFilters["listingSubtypes"];
+  minPrice: SearchFilters["minPrice"];
+  maxPrice: SearchFilters["maxPrice"];
+  hasVr: SearchFilters["hasVr"];
   setLocationLabel: (value: string) => void;
   setQuery: (value: string) => void;
   setLocation: (value: string) => void;
@@ -17,20 +26,25 @@ type SearchState = {
   toggleListingSubtype: (value: SearchState["listingSubtypes"][number]) => void;
   setPriceRange: (minPrice: number, maxPrice: number) => void;
   setHasVr: (value: boolean) => void;
+  setFilters: (value: SearchFilters) => void;
   resetFilters: () => void;
   getActiveFilterCount: () => number;
   toFeedQuery: () => Partial<FeedQueryInput>;
 };
 
-const defaultFilters = {
-  locationLabel: "Accra",
-  query: "",
+const defaultSearchFilters: SearchFilters = {
   location: "",
-  propertyType: "all" as const,
+  propertyType: "all",
   listingSubtypes: [],
   minPrice: 0,
   maxPrice: 6000,
   hasVr: false
+};
+
+const defaultFilters = {
+  locationLabel: "Accra",
+  query: "",
+  ...defaultSearchFilters
 };
 
 export const useSearchStore = create<SearchState>((set, get) => ({
@@ -55,6 +69,11 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       maxPrice
     }),
   setHasVr: (value) => set({ hasVr: value }),
+  setFilters: (value) =>
+    set({
+      ...value,
+      locationLabel: value.location.trim() || "Accra"
+    }),
   resetFilters: () => set({ ...defaultFilters }),
   getActiveFilterCount: () => {
     const { location, propertyType, listingSubtypes, minPrice, maxPrice, hasVr } = get();

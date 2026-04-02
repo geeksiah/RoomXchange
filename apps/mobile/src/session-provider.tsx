@@ -1,6 +1,7 @@
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { AppState } from "react-native";
 import { createMobileApiClient, type AuthSession } from "@roomxchange/shared/src/mobile-client";
 
 type SessionContextValue = {
@@ -125,45 +126,84 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const apiBaseUrl = resolveMobileApiUrl();
   const sessionRef = useRef<AuthSession | null>(null);
-  const validatingUnauthorizedRef = useRef(false);
+  const clearingUnauthorizedRef = useRef(false);
+  const refreshingSessionRef = useRef<Promise<AuthSession | null> | null>(null);
 
   useEffect(() => {
     sessionRef.current = session;
   }, [session]);
 
-  const handleUnauthorized = async () => {
-    if (validatingUnauthorizedRef.current) {
+  const clearSessionState = useCallback(async () => {
+    sessionRef.current = null;
+    setSessionState(null);
+    await clearStoredSession();
+  }, []);
+
+  const persistSessionState = useCallback(async (value: AuthSession) => {
+    await writeStoredSession(value);
+    sessionRef.current = value;
+    setSessionState(value);
+    return value;
+  }, []);
+
+  const refreshSessionTokens = useCallback(
+    async ({ clearOnFailure = true }: { clearOnFailure?: boolean } = {}) => {
+      const currentSession = sessionRef.current;
+      if (!currentSession) {
+        return null;
+      }
+
+      const refreshToken = currentSession.tokens.refreshToken?.trim();
+      if (!refreshToken) {
+        if (clearOnFailure) {
+          await clearSessionState();
+          return null;
+        }
+
+        return currentSession;
+      }
+
+      if (refreshingSessionRef.current) {
+        return refreshingSessionRef.current;
+      }
+
+      const refreshApi = createMobileApiClient({ baseUrl: apiBaseUrl });
+      const refreshPromise = (async () => {
+        try {
+          const nextSession = await refreshApi.refreshSession({ refreshToken });
+          await persistSessionState(nextSession);
+          return nextSession;
+        } catch {
+          if (clearOnFailure) {
+            await clearSessionState();
+            return null;
+          }
+
+          return currentSession;
+        } finally {
+          refreshingSessionRef.current = null;
+        }
+      })();
+
+      refreshingSessionRef.current = refreshPromise;
+      return refreshPromise;
+    },
+    [apiBaseUrl, clearSessionState, persistSessionState]
+  );
+
+  const handleUnauthorized = useCallback(async () => {
+    if (clearingUnauthorizedRef.current) {
       return;
     }
 
-    validatingUnauthorizedRef.current = true;
+    clearingUnauthorizedRef.current = true;
 
     try {
-      const currentSession = sessionRef.current;
-      if (!currentSession) {
-        setSessionState(null);
-        await clearStoredSession();
-        return;
-      }
-
-      const validationApi = createMobileApiClient({
-        baseUrl: apiBaseUrl,
-        getAccessToken: () => currentSession.tokens.accessToken ?? null,
-        getIdToken: () => currentSession.tokens.idToken ?? null
-      });
-      const user = await validationApi.getMe();
-
-      setSessionState({
-        ...currentSession,
-        user
-      });
-    } catch {
-      setSessionState(null);
-      await clearStoredSession();
+      await clearSessionState();
     } finally {
-      validatingUnauthorizedRef.current = false;
+      clearingUnauthorizedRef.current = false;
     }
-  };
+  }, [clearSessionState]);
 
   useEffect(() => {
     let active = true;
@@ -171,10 +211,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const restoreSession = async () => {
       try {
         const storedSession = await readStoredSession();
-        if (!active || !storedSession) {
+        if (!active) {
           return;
         }
-        setSessionState(storedSession);
+
+        if (storedSession) {
+          sessionRef.current = storedSession;
+          setSessionState(storedSession);
+          if (storedSession.tokens.refreshToken) {
+            void refreshSessionTokens({ clearOnFailure: false });
+          }
+        }
       } finally {
         if (active) {
           setHydrated(true);
@@ -187,7 +234,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [refreshSessionTokens]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active" && sessionRef.current?.tokens.refreshToken) {
+        void refreshSessionTokens({ clearOnFailure: false });
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [refreshSessionTokens]);
 
   const remoteApi = useMemo(
     () =>
@@ -195,37 +254,38 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         baseUrl: apiBaseUrl,
         getAccessToken: () => session?.tokens.accessToken ?? null,
         getIdToken: () => session?.tokens.idToken ?? null,
+        refreshAuthSession: () => refreshSessionTokens(),
         onUnauthorized: () => {
           void handleUnauthorized();
         }
       }),
-    [apiBaseUrl, session?.tokens.accessToken, session?.tokens.idToken]
+    [apiBaseUrl, handleUnauthorized, refreshSessionTokens, session?.tokens.accessToken, session?.tokens.idToken]
   );
   const api = remoteApi;
 
   const setSession = async (value: AuthSession | null) => {
-    setSessionState(value);
     try {
       if (value) {
-        await writeStoredSession(value);
+        await persistSessionState(value);
       } else {
-        await clearStoredSession();
+        await clearSessionState();
       }
     } catch {
-      return;
+      await clearSessionState();
     }
   };
 
   const logout = () => setSession(null);
 
   const refreshProfile = async () => {
-    if (!session) {
+    const currentSession = sessionRef.current;
+    if (!currentSession) {
       return;
     }
 
     const user = await api.getMe();
-    await setSession({
-      ...session,
+    await persistSessionState({
+      ...currentSession,
       user
     });
   };

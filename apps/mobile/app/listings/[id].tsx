@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, FlatList, Modal, Platform, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { Alert, Modal, Platform, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { formatAmenityLabel, formatMonthlyPrice } from "@roomxchange/shared/src/mobile";
@@ -22,7 +22,7 @@ export default function ListingDetailScreen() {
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const galleryRef = useRef<FlatList<string>>(null);
+  const lightboxScrollRef = useRef<ScrollView>(null);
   const heroGalleryRef = useRef<ScrollView>(null);
   const bottomActionInset = Math.max(insets.bottom, Platform.OS === "android" ? 24 : 12);
 
@@ -65,6 +65,18 @@ export default function ListingDetailScreen() {
     setLightboxIndex(index);
     setLightboxVisible(true);
   };
+
+  useEffect(() => {
+    if (!lightboxVisible) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      lightboxScrollRef.current?.scrollTo({ x: width * lightboxIndex, y: 0, animated: false });
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [lightboxIndex, lightboxVisible, width]);
 
   const openPublisherProfile = () => {
     router.push({
@@ -290,27 +302,27 @@ export default function ListingDetailScreen() {
           </View>
 
           {lightboxVisible ? (
-            <FlatList
+            <ScrollView
               key={lightboxGalleryKey}
-              ref={galleryRef}
-              data={listing.images}
+              ref={lightboxScrollRef}
               horizontal
               pagingEnabled
-              initialScrollIndex={lightboxIndex}
-              getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-              keyExtractor={(item, index) => `${item}-${index}`}
-              onScrollToIndexFailed={(info) => {
-                setTimeout(() => {
-                  galleryRef.current?.scrollToIndex({ index: info.index, animated: false });
-                }, 50);
-              }}
+              showsHorizontalScrollIndicator={false}
+              directionalLockEnabled
+              nestedScrollEnabled
+              removeClippedSubviews={false}
+              contentOffset={{ x: width * lightboxIndex, y: 0 }}
+              scrollEventThrottle={16}
               onMomentumScrollEnd={(event) => {
                 setLightboxIndex(Math.round(event.nativeEvent.contentOffset.x / width));
               }}
-              renderItem={({ item }) => (
-                <Image source={item} style={{ width, height }} contentFit="contain" />
-              )}
-            />
+            >
+              {listing.images.map((item, index) => (
+                <View key={`${item}-${index}`} style={{ width, height }} className="items-center justify-center">
+                  <Image source={item} style={{ width, height }} contentFit="contain" cachePolicy="memory-disk" />
+                </View>
+              ))}
+            </ScrollView>
           ) : null}
         </View>
       </Modal>

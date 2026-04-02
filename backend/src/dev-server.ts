@@ -80,6 +80,7 @@ function resolveResource(pathname: string) {
     { test: /^\/auth\/signup\/request$/, resource: "/auth/signup/request" },
     { test: /^\/auth\/signup\/verify$/, resource: "/auth/signup/verify" },
     { test: /^\/auth\/login$/, resource: "/auth/login" },
+    { test: /^\/auth\/refresh$/, resource: "/auth/refresh" },
     { test: /^\/auth\/password-reset\/request$/, resource: "/auth/password-reset/request" },
     { test: /^\/auth\/password-reset\/verify$/, resource: "/auth/password-reset/verify" },
     { test: /^\/auth\/verify-otp$/, resource: "/auth/verify-otp" },

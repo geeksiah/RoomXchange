@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Animated, FlatList, Modal, PanResponder, Platform, Text, TextInput, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -42,6 +42,7 @@ export default function ExploreScreen() {
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const feedFilters = toFeedQuery();
+  const feedQueryKey = useMemo(() => ["explore-feed", feedFilters], [feedFilters]);
   const activeFilterCount = getActiveFilterCount();
   const sheetHeight = height * 0.64;
   const collapsedSheetY = sheetHeight * 0.72;
@@ -89,8 +90,10 @@ export default function ExploreScreen() {
   );
 
   const feedQuery = useQuery({
-    queryKey: ["explore-feed", feedFilters],
-    queryFn: () => api.getFeed({ limit: 24, ...feedFilters })
+    queryKey: feedQueryKey,
+    queryFn: () => api.getFeed({ limit: 24, ...feedFilters }),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000
   });
 
   const listings = feedQuery.data?.items ?? [];
@@ -218,33 +221,67 @@ export default function ExploreScreen() {
     </DismissKeyboardView>
   );
 
-  const unavailableMapContent = (
-    <View className="flex-1 px-4 pb-10 pt-2">
-      <EmptyStateCard
-        icon="map-outline"
-        title="Map view is not ready on this build"
-        description={getMapAvailabilityHint()}
-        actionLabel="Show listings"
-        onActionPress={() => setMode("browse")}
-      />
+  const renderMapFilterButton = () => (
+    <View className="absolute right-4 top-4">
+      <ScaleButton
+        onPress={() => setFiltersVisible(true)}
+        className="h-12 w-12 items-center justify-center rounded-full bg-white"
+        contentStyle={{
+          shadowColor: "#111111",
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 6 },
+          elevation: 7
+        }}
+      >
+        <View>
+          <Ionicons name="options-outline" size={22} color="#111111" />
+          {activeFilterCount > 0 ? (
+            <CounterBadge value={activeFilterCount > 9 ? "9+" : activeFilterCount} className="absolute -right-2 -top-2" />
+          ) : null}
+        </View>
+      </ScaleButton>
     </View>
   );
 
-  const emptyMapContent = (
-    <View className="flex-1 px-4 pb-10 pt-2">
-      <EmptyStateCard
-        icon="locate-outline"
-        title={feedQuery.isLoading ? "Loading map listings" : "No mapped listings yet"}
-        description={
-          feedQuery.isLoading
-            ? "We are preparing map-ready listings now."
-            : "Switch back to the list view or broaden your search to see more results."
-        }
-        actionLabel={feedQuery.isLoading ? undefined : "Show listings"}
-        onActionPress={feedQuery.isLoading ? undefined : () => setMode("browse")}
-      />
+  const renderMapStateCard = (input: {
+    icon: ComponentProps<typeof EmptyStateCard>["icon"];
+    title: string;
+    description: string;
+    actionLabel?: string;
+    onActionPress?: () => void;
+  }) => (
+    <View className="flex-1">
+      <View className="flex-1 px-4 pb-10 pt-2">
+        <EmptyStateCard
+          icon={input.icon}
+          title={input.title}
+          description={input.description}
+          actionLabel={input.actionLabel}
+          onActionPress={input.onActionPress}
+        />
+      </View>
+      {renderMapFilterButton()}
     </View>
   );
+
+  const unavailableMapContent = renderMapStateCard({
+    icon: "map-outline",
+    title: "Map view is not ready on this build",
+    description: getMapAvailabilityHint(),
+    actionLabel: "Show listings",
+    onActionPress: () => setMode("browse")
+  });
+
+  const emptyMapContent = renderMapStateCard({
+    icon: "locate-outline",
+    title: feedQuery.isLoading ? "Loading map listings" : "No mapped listings yet",
+    description: feedQuery.isLoading
+      ? "We are preparing map-ready listings now."
+      : "Adjust your filters or broaden your search to bring more places onto the map.",
+    actionLabel: feedQuery.isLoading ? undefined : "Edit filters",
+    onActionPress: feedQuery.isLoading ? undefined : () => setFiltersVisible(true)
+  });
 
   const androidMapContent =
     !nativeMapConfigured || mapRenderFailed ? (
@@ -284,26 +321,7 @@ export default function ExploreScreen() {
             ))}
           </MapView>
 
-          <View className="absolute right-4 top-4">
-            <ScaleButton
-              onPress={() => setFiltersVisible(true)}
-              className="h-12 w-12 items-center justify-center rounded-full bg-white"
-              contentStyle={{
-                shadowColor: "#111111",
-                shadowOpacity: 0.1,
-                shadowRadius: 12,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 7
-              }}
-            >
-              <View>
-                <Ionicons name="options-outline" size={22} color="#111111" />
-                {activeFilterCount > 0 ? (
-                  <CounterBadge value={activeFilterCount > 9 ? "9+" : activeFilterCount} className="absolute -right-2 -top-2" />
-                ) : null}
-              </View>
-            </ScaleButton>
-          </View>
+          {renderMapFilterButton()}
 
           {selectedListing ? (
             <View className="absolute inset-x-4" style={{ bottom: androidBottomOffset + 84 }}>
@@ -436,26 +454,7 @@ export default function ExploreScreen() {
             <View className="absolute inset-0 bg-white/12" />
           </Animated.View>
 
-          <View className="absolute right-4 top-4">
-            <ScaleButton
-              onPress={() => setFiltersVisible(true)}
-              className="h-12 w-12 items-center justify-center rounded-full bg-white"
-              contentStyle={{
-                shadowColor: "#111111",
-                shadowOpacity: 0.1,
-                shadowRadius: 12,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 7
-              }}
-            >
-              <View>
-                <Ionicons name="options-outline" size={22} color="#111111" />
-                {activeFilterCount > 0 ? (
-                  <CounterBadge value={activeFilterCount > 9 ? "9+" : activeFilterCount} className="absolute -right-2 -top-2" />
-                ) : null}
-              </View>
-            </ScaleButton>
-          </View>
+          {renderMapFilterButton()}
 
           <Animated.View
             style={{

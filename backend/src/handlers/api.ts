@@ -20,6 +20,7 @@ import { created, getCurrentUserId, getQuery, handleError, noContent, ok, parseB
 import {
   getUserProfile,
   loginWithPassword,
+  refreshUserSession,
   requestOtp,
   requestPasswordReset,
   requestSignup,
@@ -101,6 +102,7 @@ const routePatterns = [
   "/auth/signup/request",
   "/auth/signup/verify",
   "/auth/login",
+  "/auth/refresh",
   "/conversations/{id}/messages/delete",
   "/conversations/{id}/messages",
   "/conversations/read-all",
@@ -191,6 +193,10 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     if (resource === "/auth/login" && event.httpMethod === "POST") {
       return ok(await loginWithPassword(parseBody(event, passthroughSchema)));
+    }
+
+    if (resource === "/auth/refresh" && event.httpMethod === "POST") {
+      return ok(await refreshUserSession(parseBody(event, passthroughSchema)));
     }
 
     if (resource === "/auth/password-reset/request" && event.httpMethod === "POST") {

@@ -91,6 +91,10 @@ export const authLoginSchema = z.object({
   password: passwordSchema
 });
 
+export const authRefreshSchema = z.object({
+  refreshToken: z.string().trim().min(8)
+});
+
 export const authSignupRequestSchema = z.object({
   name: z.string().trim().min(2).max(80),
   email: optionalEmailSchema,
@@ -621,6 +625,7 @@ export type OtpRequestInput = z.infer<typeof otpRequestSchema>;
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
 export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
 export type AuthLoginInput = z.infer<typeof authLoginSchema>;
+export type AuthRefreshInput = z.infer<typeof authRefreshSchema>;
 export type AuthSignupRequestInput = z.infer<typeof authSignupRequestSchema>;
 export type AuthSignupVerifyInput = z.infer<typeof authSignupVerifySchema>;
 export type AuthPasswordResetRequestInput = z.infer<typeof authPasswordResetRequestSchema>;

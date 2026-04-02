@@ -5,6 +5,7 @@ import {
   authLoginSchema,
   authPasswordResetRequestSchema,
   authPasswordResetVerifySchema,
+  authRefreshSchema,
   authSessionSchema,
   authSignupRequestSchema,
   authSignupVerifySchema,
@@ -45,6 +46,7 @@ import {
   type AuthLoginInput,
   type AuthPasswordResetRequestInput,
   type AuthPasswordResetVerifyInput,
+  type AuthRefreshInput,
   type AuthSession,
   type AuthSignupRequestInput,
   type AuthSignupVerifyInput,
@@ -142,6 +144,7 @@ type ApiClientOptions = {
   baseUrl?: string;
   getAccessToken?: () => Promise<string | null> | string | null;
   getIdToken?: () => Promise<string | null> | string | null;
+  refreshAuthSession?: () => Promise<AuthSession | null>;
   onUnauthorized?: () => void;
 };
 
@@ -221,7 +224,8 @@ async function request<T>(
   path: string,
   schema: { parse: (input: unknown) => T },
   options: RequestOptions = {},
-  client?: ApiClientOptions
+  client?: ApiClientOptions,
+  attemptedRefresh = false
 ) {
   const baseURL = resolveApiBaseUrl(client?.baseUrl);
 
@@ -265,7 +269,14 @@ async function request<T>(
         continue;
       }
 
-      if (unauthorized && authTokens.length > 0) {
+      if (unauthorized && authTokens.length > 0 && !attemptedRefresh && client?.refreshAuthSession) {
+        const refreshedSession = await client.refreshAuthSession();
+        if (refreshedSession) {
+          return request(path, schema, options, client, true);
+        }
+      }
+
+      if (unauthorized) {
         client?.onUnauthorized?.();
       }
 
@@ -281,6 +292,10 @@ export function createMobileApiClient(options: ApiClientOptions = {}) {
     login(input: AuthLoginInput) {
       authLoginSchema.parse(input);
       return request("/auth/login", authSessionSchema, { method: "POST", body: input }, options);
+    },
+    refreshSession(input: AuthRefreshInput) {
+      authRefreshSchema.parse(input);
+      return request("/auth/refresh", authSessionSchema, { method: "POST", body: input, token: null }, options, true);
     },
     requestSignup(input: AuthSignupRequestInput) {
       authSignupRequestSchema.parse(input);
@@ -429,6 +444,7 @@ export type {
   AuthLoginInput,
   AuthPasswordResetRequestInput,
   AuthPasswordResetVerifyInput,
+  AuthRefreshInput,
   AuthSession,
   AuthSignupRequestInput,
   AuthSignupVerifyInput,

@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { FlatList, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CounterBadge } from "../../src/components/counter-badge";
@@ -29,7 +29,9 @@ export default function HomeScreen() {
 
   const feedQuery = useQuery({
     queryKey,
-    queryFn: () => api.getFeed({ limit: 12, ...feedFilters })
+    queryFn: () => api.getFeed({ limit: 12, ...feedFilters }),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000
   });
 
   return (
