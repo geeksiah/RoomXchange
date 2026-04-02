@@ -24,21 +24,39 @@ Important:
 - Category: `House & Home`
 - Short description:
 
-  `Find rooms and apartments nearby, compare listings, and contact owners safely.`
+  `Browse rooms and apartments, compare listings, and contact owners.`
 
 - Full description:
 
-  `RoomXchange helps renters discover rooms and apartments, compare listing details, save alerts, and contact owners with confidence. Browse property photos, prices, amenities, and map-based location details in one clean mobile experience.
+  `RoomXchange helps you discover rooms and apartments, compare prices and amenities, view map-based locations, save alerts, and contact property owners from your phone.
 
   Use RoomXchange to:
   - Explore room and apartment listings
-  - Filter by price, location, and property type
-  - Save alerts for the places you want most
+  - Filter by price, area, and property type
+  - View photos, pricing, and key property details
+  - Explore listings on a map
+  - Save alerts for the places you want to track
   - Manage your own listings and profile
   - Receive optional notifications about new activity
   - Unlock owner contact access through secure web checkout
 
-  RoomXchange keeps payment flows on the web while the mobile app stays focused on discovery, messaging, and listing management.`
+  RoomXchange is designed for property discovery and communication. Any subscription or owner-contact unlock flow is completed on the web, while the mobile app focuses on browsing, alerts, messaging, and listing management.`
+
+### Listing asset checklist
+
+- App icon source: `apps/mobile/src/assets/icon-primary-bg.png`
+- App icon status: `1024x1024` and suitable to export as the required `512x512` Play Store icon
+- Feature graphic status: `Not currently in repo`
+- Feature graphic spec: `1024x500`, PNG or JPEG, no alpha
+- Suggested feature graphic direction: `Use the RoomXchange coral brand colour, the icon, and one or two large UI crops that show listing discovery and maps. Keep any text minimal and centred away from the edges.`
+- Phone screenshots status: `No Play-ready screenshots currently in repo`
+- Recommended phone screenshot set:
+  - `Home / discovery feed`
+  - `Map view with listing pins`
+  - `Listing details page`
+  - `Filters or saved alerts screen`
+- Recommended screenshot size: `1080x1920` portrait PNG or JPEG
+- Large-screen screenshots: `Optional unless you want to actively market tablet and Chromebook support`
 
 ### Contact and policy fields
 
